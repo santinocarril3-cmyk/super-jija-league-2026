@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Súper Jija League 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #00FF87;
+    --verde-dark: #00cc6a;
+    --negro: #0a0a0a;
+    --gris-oscuro: #111111;
+    --gris-medio: #1c1c1c;
+    --gris-borde: #2a2a2a;
+    --blanco: #f0f0f0;
+    --rojo: #ff3b3b;
+    --oro: #FFD700;
+    --azul: #4facfe;
+    --purpura: #8a2be2;
+    --purpura-glow: rgba(138, 43, 226, 0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--negro);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 15% 60%, rgba(90, 20, 180, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 25%, rgba(120, 30, 200, 0.09) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 50% 95%, rgba(80, 0, 160, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
+    color: var(--blanco);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-bottom: 2px solid var(--verde);
+    padding: 18px 24px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .logo-wrap { display: flex; flex-direction: column; line-height: 1; }
+  .logo-main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 6vw, 48px);
+    color: var(--verde);
+    letter-spacing: 2px;
+  }
+  .logo-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(10px, 2vw, 13px);
+    color: #666;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .season-badge {
+    background: var(--verde);
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    padding: 4px 12px;
+    letter-spacing: 2px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--gris-oscuro);
+    border-bottom: 1px solid var(--gris-borde);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  nav button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+  }
+  nav button:hover { color: #aaa; }
+  nav button.active {
+    color: var(--verde);
+    border-bottom-color: var(--verde);
+    background: rgba(0,255,135,.04);
+  }
+
+  /* ── MAIN ── */
+  main { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--verde);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-sub {
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* ── TABLA POSICIONES ── */
+  .standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .standings-table thead tr {
+    background: #111;
+    border-bottom: 2px solid var(--verde);
+  }
+  .standings-table th {
+    padding: 12px 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--verde);
+    text-align: center;
+    font-weight: 700;
+  }
+  .standings-table th:nth-child(2) { text-align: left; }
+  .standings-table td {
+    padding: 12px 8px;
+    font-size: 15px;
+    text-align: center;
+    border-bottom: 1px solid var(--gris-borde);
+    transition: background-color 0.3s ease;
+  }
+  .standings-table td:nth-child(2) { text-align: left; font-weight: 600; }
+  .standings-table tr:hover td { background: var(--purpura-glow); }
+
+  .pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--gris-borde);
+    color: #888;
+  }
+  .pos-1 .pos-badge { background: var(--oro); color: #000; }
+  .pos-2 .pos-badge { background: #aaa; color: #000; }
+  .pos-3 .pos-badge { background: #cd7f32; color: #000; }
+
+  .pts-cell {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--verde);
+  }
+  .dg-pos { color: var(--verde); }
+  .dg-neg { color: var(--rojo); }
+
+  .bonus-badge {
+    background: var(--oro);
+    color: #000;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin-left: 6px;
+    letter-spacing: 1px;
+    vertical-align: middle;
+  }
+
+  /* ── CARD CARGAR PARTIDO ── */
+  .match-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(2px);
+  }
+  .match-card h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 14px;
+  }
+
+  .match-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .match-input-row select,
+  .match-input-row input[type=number] {
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .match-input-row select:focus,
+  .match-input-row input:focus { border-color: var(--verde); }
+
+  .match-input-row input[type=number] {
+    width: 60px;
+    text-align: center;
+    font-size: 22px;
+    font-family: 'Bebas Neue', sans-serif;
+    -moz-appearance: textfield;
+  }
+  .match-input-row input[type=number]::-webkit-outer-spin-button,
+  .match-input-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .vs-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: #444;
+    text-align: center;
+  }
+
+  .bonus-info-text {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #bonus-hint, #cl-bonus-hint { color: var(--oro); font-weight: bold; }
+
+  .btn-add {
+    background: linear-gradient(135deg, #8a2be2 0%, #4a0e8f 60%, #1a0540 100%);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s, transform .2s;
+  }
+  .btn-add:hover {
+    background: linear-gradient(135deg, #9a3bf2 0%, #5a1e9f 60%, #2a1060 100%);
+    transform: scale(1.05);
+  }
+  .btn-add:active { transform: scale(.97); }
+
+  .btn-danger {
+    background: none;
+    color: var(--rojo);
+    border: 1px solid var(--rojo);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-danger:hover { background: rgba(255,59,59,.1); }
+
+  /* ── FIXTURE / CALENDARIO CARD ── */
+  .fixture-section {
+    background: rgba(15, 10, 25, 0.6);
+    border: 1px solid var(--gris-borde);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .fixture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .fixture-item {
+    background: var(--gris-oscuro);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fixture-item:hover {
+    border-color: var(--verde);
+    background: rgba(0, 255, 135, 0.03);
+  }
+  .fixture-date {
+    font-size: 11px;
+    color: var(--verde);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .fixture-teams {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .fixture-status {
+    font-size: 11px;
+    text-align: right;
+    color: #555;
+    margin-top: 4px;
+  }
+  .fixture-status.played { color: var(--verde); font-weight: bold; }
+
+  /* ── HISTORIAL PARTIDOS ── */
+  .match-list { margin-bottom: 24px; }
+  .match-list-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .match-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(25, 15, 45, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+  }
+  .match-item:hover { background: rgba(35, 20, 60, 0.85); }
+  .match-item .teams { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .match-item .score-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--verde);
+    letter-spacing: 2px;
+    min-width: 60px;
+    text-align: center;
+  }
+  .match-item .round-label {
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 1px;
+    min-width: 50px;
+    text-align: right;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 28px;
+    color: #333;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px dashed var(--gris-borde);
+    border-radius: 4px;
+  }
+
+  /* ── GOLEADORES ── */
+  .pichichi-table { width: 100%; border-collapse: collapse; }
+  .pichichi-table tr { border-bottom: 1px solid var(--gris-borde); }
+  .pichichi-table td { padding: 12px 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; transition: background-color 0.3s ease; }
+  .pichichi-table td:first-child { color: #555; width: 36px; text-align: center; }
+  .pichichi-table td:last-child { text-align: right; font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--verde); }
+  .pichichi-table tr:hover td { background: var(--purpura-glow); }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar { height: 6px; background: var(--verde); border-radius: 3px; transition: width .4s ease; }
+
+  /* ── COPAS INFO ── */
+  .copa-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--verde);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 18px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(2px);
+  }
+  .copa-card.rojo { border-left-color: var(--rojo); }
+  .copa-card.oro { border-left-color: var(--oro); }
+  .copa-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .copa-card p { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 6px; }
+  .copa-card p strong { color: var(--blanco); }
+  .copa-card .premio {
+    display: inline-block;
+    background: rgba(255,215,0,.1);
+    border: 1px solid var(--oro);
+    color: var(--oro);
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* ── COPA BRACKET ── */
+  .copa-match {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .copa-match select, .copa-match input[type=number] {
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    padding: 9px 10px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .copa-match select:focus, .copa-match input:focus { border-color: var(--verde); }
+  .copa-match input[type=number] {
+    width: 55px; text-align: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+    -moz-appearance: textfield;
+  }
+  .copa-match input[type=number]::-webkit-outer-spin-button,
+  .copa-match input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* ── TABLA ANUAL ── */
+  .annual-note {
+    background: rgba(0,255,135,.05);
+    border: 1px solid rgba(0,255,135,.2);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* ── DISCIPLINA ── */
+  .disc-table { width: 100%; border-collapse: collapse; }
+  .disc-table th { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--verde); padding: 8px; text-align: left; border-bottom: 2px solid var(--verde); }
+  .disc-table td { font-size: 14px; padding: 12px 8px; border-bottom: 1px solid var(--gris-borde); transition: background-color 0.3s ease; }
+  .disc-table td:last-child { text-align: center; }
+  .disc-table tbody tr:hover td { background: var(--purpura-glow); }
+  .card-amarilla { background: var(--oro); color: #000; padding: 1px 6px; border-radius: 2px; font-weight: 700; font-size: 12px; }
+  .card-roja { background: var(--rojo); color: #fff; padding: 1px 6px; border-radius: 2px; font-weight: 700; font-size: 12px; }
+  .add-disc-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .add-disc-row input, .add-disc-row select {
+    background: var(--negro); border: 1px solid var(--gris-borde); color: var(--blanco);
+    font-family: 'Barlow', sans-serif; font-size: 14px; padding: 8px 10px; border-radius: 3px; outline: none;
+    transition: border-color .2s; flex: 1; min-width: 120px;
+  }
+  .add-disc-row input:focus, .add-disc-row select:focus { border-color: var(--verde); }
+
+  /* ── LOADING BAR ── */
+  #loading-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 999;
+    background: linear-gradient(90deg, var(--verde), var(--azul), var(--verde));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite linear;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── MODO COMISIONADO ── */
+  #lock-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(10,10,10,.97);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px;
+    backdrop-filter: blur(4px);
+  }
+  #lock-overlay.hidden { display: none; }
+
+  .lock-box {
+    background: var(--gris-medio);
+    border: 1px solid var(--gris-borde);
+    border-top: 3px solid var(--verde);
+    border-radius: 6px;
+    padding: 32px 28px;
+    width: min(340px, 90vw);
+    text-align: center;
+  }
+  .lock-icon { font-size: 40px; margin-bottom: 8px; }
+  .lock-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: var(--verde);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .lock-sub { font-size: 12px; color: #555; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .lock-input {
+    width: 100%;
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    padding: 12px 14px;
+    border-radius: 3px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  .lock-input:focus { border-color: var(--verde); }
+  .lock-error { color: var(--rojo); font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  .lock-btn {
+    width: 100%;
+    background: var(--verde);
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    border: none;
+    padding: 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s;
+    margin-bottom: 10px;
+  }
+  .lock-btn:hover { background: var(--verde-dark); }
+  .lock-skip {
+    background: none; border: none; color: #444;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; letter-spacing: 1px; cursor: pointer;
+    text-decoration: underline; margin-top: 4px;
+  }
+  .lock-skip:hover { color: #888; }
+
+  #mode-badge { display: flex; align-items: center; gap: 8px; }
+  .mode-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 2px; font-weight: 700;
+  }
+  .mode-pill.spectator { background: rgba(255,255,255,.08); color: #555; }
+  .mode-pill.commissioner { background: rgba(0,255,135,.15); color: var(--verde); border: 1px solid var(--verde); }
+  #btn-toggle-mode {
+    background: none; border: 1px solid var(--gris-borde);
+    color: #555; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; letter-spacing: 1px; padding: 4px 10px;
+    border-radius: 2px; cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  #btn-toggle-mode:hover { border-color: var(--verde); color: var(--verde); }
+
+  /* Ocultar en modo espectador */
+  body.spectator-mode .match-card,
+  body.spectator-mode .add-disc-row,
+  body.spectator-mode .pichichi-table button.btn-danger,
+  body.spectator-mode .btn-danger { display: none !important; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 20px;
+    background: var(--gris-medio); border: 1px solid var(--verde);
+    color: var(--blanco); font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px; letter-spacing: 1px;
+    padding: 12px 20px; border-radius: 4px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; }
+
+  .tarjeta-tabla {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(2px);
+  }
+
+  @keyframes flash-update {
+    0%   { background-color: transparent; }
+    20%  { background-color: rgba(255, 215, 0, 0.22); }
+    100% { background-color: transparent; }
+  }
+  .flash-updated td { animation: flash-update 1.4s ease-out; }
+
+  /* ── FIREBASE STATUS ── */
+  #firebase-status {
+    position: fixed; bottom: 24px; left: 20px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; letter-spacing: 1px;
+    padding: 6px 12px; border-radius: 3px;
+    z-index: 200;
+    transition: all .3s;
+  }
+  #firebase-status.online  { background: rgba(0,255,135,.1); border: 1px solid var(--verde); color: var(--verde); }
+  #firebase-status.offline { background: rgba(255,59,59,.1);  border: 1px solid var(--rojo);  color: var(--rojo); }
+  #firebase-status.syncing { background: rgba(79,172,254,.1); border: 1px solid var(--azul);  color: var(--azul); }
+
+  @media(max-width: 480px) {
+    .match-input-row { grid-template-columns: 1fr auto auto 1fr; gap: 6px; }
+    .match-input-row input[type=number] { width: 48px; }
+    .copa-match { gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-bar"></div>
+
+<div id="lock-overlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title" id="lock-title">Súper Jija League</div>
+    <div class="lock-sub" id="lock-sub">Modo Comisionado</div>
+    <input class="lock-input" type="password" id="lock-pwd" placeholder="Contraseña" maxlength="20">
+    <div class="lock-error" id="lock-error"></div>
+    <button class="lock-btn" id="btn-unlock">ENTRAR COMO COMISIONADO</button>
+    <button class="lock-skip hidden" id="btn-spectator">Ver como espectador →</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo-wrap">
+    <span class="logo-main">⚽ Súper Jija League</span>
+    <span class="logo-sub" id="header-sub">Planilla Oficial</span>
+  </div>
+  <div id="mode-badge">
+    <span class="mode-pill spectator" id="mode-pill">ESPECTADOR</span>
+    <button id="btn-toggle-mode">🔑 Comisionado</button>
+    <span class="season-badge">2026</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" id="btn-tab-apertura">🏆 Apertura</button>
+  <button id="btn-tab-clausura">🏆 Clausura</button>
+  <button id="btn-tab-anual">🛡️ Tabla Anual</button>
+  <button id="btn-tab-copas">🥤 Copas</button>
+  <button id="btn-tab-pichichi">⚽ Goleadores</button>
+  <button id="btn-tab-disciplina">🟨 Disciplina</button>
+</nav>
+
+<main>
+
+<div id="tab-apertura" class="tab-content active">
+  <div class="section-title">🏆 Torneo Jija Apertura</div>
+  <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-apertura"></table>
+  </div>
+
+  <div class="fixture-section">
+    <div class="match-list-title">Calendario Oficial (Clic para cargar)</div>
+    <div class="fixture-grid" id="fixture-apertura"></div>
+  </div>
+
+  <div class="match-card">
+    <h3>+ Cargar Partido</h3>
+    <div class="match-input-row">
+      <select id="ap-home"></select>
+      <input type="number" id="ap-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="ap-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+      <select id="ap-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div class="bonus-info-text">
+      <span>Estado Bonus:</span>
+      <span id="bonus-hint">No aplica</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-apertura">AGREGAR</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de partidos jugados</div>
+    <div id="matches-apertura"></div>
+  </div>
+</div>
+
+<div id="tab-clausura" class="tab-content">
+  <div class="section-title">🏆 Torneo Jija Clausura</div>
+  <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-clausura"></table>
+  </div>
+
+  <div class="fixture-section">
+    <div class="match-list-title">Calendario Oficial (Clic para cargar)</div>
+    <div class="fixture-grid" id="fixture-clausura"></div>
+  </div>
+
+  <div class="match-card">
+    <h3>+ Cargar Partido</h3>
+    <div class="match-input-row">
+      <select id="cl-home"></select>
+      <input type="number" id="cl-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="cl-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+      <select id="cl-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div class="bonus-info-text">
+      <span>Estado Bonus:</span>
+      <span id="cl-bonus-hint">No aplica</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-clausura">AGREGAR</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de partidos jugados</div>
+    <div id="matches-clausura"></div>
+  </div>
+</div>
+
+<div id="tab-anual" class="tab-content">
+  <div class="section-title">🛡️ Honorary Shield</div>
+  <div class="section-sub">Acumulado Apertura + Clausura — Define Draft de Invierno</div>
+  <div class="annual-note">
+    <strong>Draft de Invierno:</strong> El orden de selección se ejecuta en sentido <strong>inverso</strong> a las posiciones de esta tabla.<br>
+    <strong>Escudo de Honor:</strong> El equipo con más puntos totales al final de la temporada se consagra ganador.
+  </div>
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-anual"></table>
+  </div>
+</div>
+
+<div id="tab-copas" class="tab-content">
+  <div class="section-title">🥤 Copas</div>
+  <div class="section-sub">Torneos Eliminatorios · 2026</div>
+
+  <div class="copa-card">
+    <h3>🏆 Coca Champions</h3>
+    <p><strong>Formato:</strong> Eliminación directa · Semifinales (ida y vuelta) → Final Única</p>
+    <p><strong>Desempate:</strong> Tiempo suplementario en clase → penales si persiste el empate</p>
+    <div class="premio">🏆 Premio: Cupo directo a la Jija RoosterFight</div>
+  </div>
+
+  <div class="match-card">
+    <h3>⚽ Cargar Partido Copa</h3>
+    <div style="margin-bottom:10px;">
+      <select id="copa-torneo" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;width:100%;">
+        <option value="Coca Champions · SF1 Ida">Coca Champions — SF1 Ida</option>
+        <option value="Coca Champions · SF1 Vuelta">Coca Champions — SF1 Vuelta</option>
+        <option value="Coca Champions · SF2 Ida">Coca Champions — SF2 Ida</option>
+        <option value="Coca Champions · SF2 Vuelta">Coca Champions — SF2 Vuelta</option>
+        <option value="Coca Champions · FINAL">Coca Champions — FINAL</option>
+        <option value="Super Jija Cup · FINAL">Super Jija Cup — FINAL</option>
+        <option value="Jija RoosterFight · FINAL">Jija RoosterFight — FINAL</option>
+      </select>
+    </div>
+    <div class="copa-match">
+      <select id="copa-home"></select>
+      <input type="number" id="copa-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="copa-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <select id="copa-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="copa-nota" placeholder="Nota / Penales (Opcional)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-copa">AGREGAR COPA</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de copas</div>
+    <div id="matches-copas"></div>
+  </div>
+</div>
+
+<div id="tab-pichichi" class="tab-content">
+  <div class="section-title">⚽ Goleadores</div>
+  <div class="section-sub">Tabla de goleadores del torneo</div>
+
+  <div class="match-card">
+    <h3>+ Registrar Gol</h3>
+    <div class="add-disc-row">
+      <select id="gol-team"></select>
+      <input type="text" id="gol-jugador" placeholder="Nombre del Jugador" maxlength="30">
+      <input type="number" id="gol-cantidad" value="1" min="1" style="width:70px;text-align:center;">
+      <button class="btn-add" id="btn-add-gol" style="padding:8px 20px; font-size:15px;">+ GOL</button>
+    </div>
+  </div>
+
+  <div class="tarjeta-tabla">
+    <table class="pichichi-table" id="table-pichichi"></table>
+  </div>
+</div>
+
+<div id="tab-disciplina" class="tab-content">
+  <div class="section-title">🟨 Tabla de Disciplina</div>
+  <div class="section-sub">Tarjetas amarillas y rojas acumuladas</div>
+
+  <div class="match-card">
+    <h3>+ Registrar Tarjeta</h3>
+    <div class="add-disc-row">
+      <select id="disc-team"></select>
+      <input type="text" id="disc-jugador" placeholder="Nombre del Jugador" maxlength="30">
+      <select id="disc-tipo" style="max-width:140px;">
+        <option value="AMARILLA">Amarilla 🟨</option>
+        <option value="ROJA">Roja 🟥</option>
+      </select>
+      <button class="btn-add" id="btn-add-tarjeta" style="padding:8px 20px; font-size:15px;">+ TARJETA</button>
+    </div>
+  </div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" style="font-family:'Barlow', sans-serif;">
+      <thead>
+        <tr>
+          <th>Equipo</th>
+          <th>Jugador</th>
+          <th>Sanción</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="table-disciplina"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<div id="toast"></div>
+<div id="firebase-status" class="syncing">⏳ Conectando...</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIREBASE SDK (CDN — no requiere npm ni bundler)
+════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, get }
+                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ── CONFIG FIREBASE ──────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAfFOesu6vXGTcATvtBH8IdAbgm6AqfJBY",
+    authDomain:        "superjije.firebaseapp.com",
+    databaseURL:       "https://superjije-default-rtdb.firebaseio.com",
+    projectId:         "superjije",
+    storageBucket:     "superjije.firebasestorage.app",
+    messagingSenderId: "428893538374",
+    appId:             "1:428893538374:web:2ad3d312c409f6e775e247"
+  };
+
+  const app      = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
+  const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
+
+  const FIXTURE_APERTURA = [
+    { fecha: "Fecha 1", home: "All Stars",   away: "Real Envido" },
+    { fecha: "Fecha 1", home: "4to Régimen", away: "Dou FC" },
+    { fecha: "Fecha 2", home: "4to Régimen", away: "Real Envido" },
+    { fecha: "Fecha 2", home: "Dou FC",      away: "All Stars" },
+    { fecha: "Fecha 3", home: "Dou FC",      away: "Real Envido" },
+    { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
+    { fecha: "Fecha 4", home: "Real Envido", away: "All Stars" },
+    { fecha: "Fecha 4", home: "Dou FC",      away: "4to Régimen" },
+    { fecha: "Fecha 5", home: "Real Envido", away: "4to Régimen" },
+    { fecha: "Fecha 5", home: "All Stars",   away: "Dou FC" },
+    { fecha: "Fecha 6", home: "Real Envido", away: "Dou FC" },
+    { fecha: "Fecha 6", home: "4to Régimen", away: "All Stars" }
+  ];
+
+  const FIXTURE_CLAUSURA = [
+    { fecha: "Fecha 1", home: "Real Envido", away: "All Stars" },
+    { fecha: "Fecha 1", home: "Dou FC",      away: "4to Régimen" },
+    { fecha: "Fecha 2", home: "Real Envido", away: "Dou FC" },
+    { fecha: "Fecha 2", home: "All Stars",   away: "Dou FC" },
+    { fecha: "Fecha 3", home: "Real Envido", away: "Dou FC" },
+    { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
+    { fecha: "Fecha 4", home: "All Stars",   away: "Real Envido" },
+    { fecha: "Fecha 4", home: "4to Régimen", away: "Dou FC" },
+    { fecha: "Fecha 5", home: "4to Régimen", away: "Real Envido" },
+    { fecha: "Fecha 5", home: "Dou FC",      away: "All Stars" },
+    { fecha: "Fecha 6", home: "Dou FC",      away: "Real Envido" },
+    { fecha: "Fecha 6", home: "All Stars",   away: "4to Régimen" }
+  ];
+
+  // ── ESTADO LOCAL (espejo del snapshot de Firebase) ───────────────────────
+  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [] };
+  let isCommissioner = false;
+
+  // ── HELPERS FIREBASE ─────────────────────────────────────────────────────
+
+  // Guarda una clave del state en Firebase
+  async function saveKey(key) {
+    setStatus('syncing');
+    await set(ref(database, `jija2026/${key}`), state[key]);
+    setStatus('online');
+  }
+
+  // Guarda la contraseña del comisionado en Firebase
+  async function savePassword(hash) {
+    await set(ref(database, 'jija2026/config/comm_pwd'), hash);
+  }
+
+  // Lee la contraseña guardada
+  async function getPassword() {
+    const snap = await get(ref(database, 'jija2026/config/comm_pwd'));
+    return snap.exists() ? snap.val() : null;
+  }
+
+  // ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
+  // Cada vez que cualquier otro usuario guarda algo, todos ven la actualización
+  function subscribeRealtime() {
+    onValue(ref(database, 'jija2026'), (snapshot) => {
+      const data = snapshot.val() || {};
+      state.apertura  = data.apertura  ? Object.values(data.apertura)  : [];
+      state.clausura  = data.clausura  ? Object.values(data.clausura)  : [];
+      state.copas     = data.copas     ? Object.values(data.copas)     : [];
+      state.goles     = data.goles     ? Object.values(data.goles)     : [];
+      state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
+      renderAll();
+      setStatus('online');
+    }, (error) => {
+      console.error(error);
+      setStatus('offline');
+    });
+  }
+
+  // ── HASH simple (mismo algoritmo que la versión original) ────────────────
+  function hashStr(input) {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = (hash << 5) - hash + input.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash.toString();
+  }
+
+  // ── STATUS INDICATOR ─────────────────────────────────────────────────────
+  function setStatus(s) {
+    const el = document.getElementById('firebase-status');
+    el.className = `${s}`;
+    el.textContent = s === 'online'  ? '🟢 Firebase Online'
+                   : s === 'offline' ? '🔴 Sin conexión'
+                   :                   '⏳ Sincronizando...';
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────────
+  async function init() {
+    document.getElementById('loading-bar').style.display = 'none';
+    populateSelects();
+    subscribeRealtime();       // activa listener en tiempo real
+    await checkInitialOverlay();
+  }
+
+  // ── OVERLAY / LOGIN ───────────────────────────────────────────────────────
+  async function checkInitialOverlay() {
+    const stored = await getPassword();
+    const overlay = document.getElementById('lock-overlay');
+    overlay.classList.remove('hidden');
+
+    if (!stored) {
+      // Primera vez: crear contraseña
+      document.getElementById('lock-title').textContent   = 'Crear Contraseña';
+      document.getElementById('lock-sub').textContent     = 'Definí la clave de Comisionado';
+      document.getElementById('btn-unlock').textContent   = 'ESTABLECER CLAVE';
+      document.getElementById('btn-spectator').classList.add('hidden');
+    } else {
+      document.getElementById('btn-spectator').classList.remove('hidden');
+    }
+  }
+
+  async function tryUnlock() {
+    const input = document.getElementById('lock-pwd').value;
+    const err   = document.getElementById('lock-error');
+    const stored = await getPassword();
+
+    if (!stored) {
+      if (input.length < 4) { err.textContent = '❌ Mínimo 4 caracteres'; return; }
+      await savePassword(hashStr(input));
+      document.getElementById('lock-overlay').classList.add('hidden');
+      setCommissionerMode(true);
+      showToast('✓ Contraseña creada. Sos el Comisionado!');
+    } else if (hashStr(input) === stored) {
+      document.getElementById('lock-overlay').classList.add('hidden');
+      setCommissionerMode(true);
+      showToast('✓ Bienvenido, Comisionado');
+    } else {
+      err.textContent = '❌ Contraseña incorrecta';
+      document.getElementById('lock-pwd').value = '';
+      document.getElementById('lock-pwd').focus();
+    }
+  }
+
+  function enterSpectator() {
+    document.getElementById('lock-overlay').classList.add('hidden');
+    setCommissionerMode(false);
+    showToast('👁️ Modo Espectador Activo');
+  }
+
+  async function promptLogin() {
+    if (isCommissioner) {
+      setCommissionerMode(false);
+      showToast('🔒 Cerraste sesión');
+    } else {
+      document.getElementById('lock-overlay').classList.remove('hidden');
+      document.getElementById('lock-error').textContent = '';
+      document.getElementById('lock-pwd').value = '';
+      document.getElementById('lock-pwd').focus();
+      // Asegurar que el botón espectador esté visible si ya hay contraseña
+      const stored = await getPassword();
+      if (stored) document.getElementById('btn-spectator').classList.remove('hidden');
+    }
+  }
+
+  function setCommissionerMode(bool) {
+    isCommissioner = bool;
+    const badge     = document.getElementById('mode-pill');
+    const toggleBtn = document.getElementById('btn-toggle-mode');
+    if (bool) {
+      document.body.classList.remove('spectator-mode');
+      badge.textContent = "COMISIONADO";
+      badge.className   = "mode-pill commissioner";
+      toggleBtn.textContent = "🔒 Salir";
+    } else {
+      document.body.classList.add('spectator-mode');
+      badge.textContent = "ESPECTADOR";
+      badge.className   = "mode-pill spectator";
+      toggleBtn.textContent = "🔑 Comisionado";
+    }
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────────────────
+  function showToast(text) {
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── RENDER ALL ────────────────────────────────────────────────────────────
+  function renderAll() {
+    renderStandings('apertura', 'table-apertura');
+    renderStandings('clausura', 'table-clausura');
+    renderTablaAnual();
+    renderFixture('apertura', FIXTURE_APERTURA, 'fixture-apertura');
+    renderFixture('clausura', FIXTURE_CLAUSURA, 'fixture-clausura');
+    renderMatchesList('apertura', 'matches-apertura');
+    renderMatchesList('clausura', 'matches-clausura');
+    renderMatchesCopas();
+    renderPichichi();
+    renderDisciplina();
+  }
+
+  // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
+  function calculateTable(torneo) {
+    let data = {};
+    TEAMS.forEach(t => { data[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, bonus:0 }; });
+
+    state[torneo].forEach(m => {
+      if (!data[m.home] || !data[m.away]) return;
+      data[m.home].pj++; data[m.away].pj++;
+      data[m.home].gf += m.ghome; data[m.home].gc += m.gaway;
+      data[m.away].gf += m.gaway; data[m.away].gc += m.ghome;
+
+      if (m.ghome > m.gaway) {
+        data[m.home].pg++; data[m.home].p += 3; data[m.away].pp++;
+      } else if (m.ghome < m.gaway) {
+        data[m.away].pg++; data[m.away].p += 3; data[m.home].pp++;
+      } else {
+        data[m.home].pe++; data[m.away].pe++;
+        data[m.home].p += 1; data[m.away].p += 1;
+      }
+    });
+
+    TEAMS.forEach(t => { data[t].dg = data[t].gf - data[t].gc; });
+
+    const totalFechas = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
+    if (state[torneo].length === totalFechas) applyBonus(data);
+
+    let arr = Object.keys(data).map(name => ({ name, ...data[name] }));
+    arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
+    return arr;
+  }
+
+  function applyBonus(tableData) {
+    let sorted = Object.keys(tableData).map(n => ({ name: n, ...tableData[n] }));
+    sorted.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf);
+    if (sorted[0].pj > 0) { tableData[sorted[0].name].p += 1; tableData[sorted[0].name].bonus = 1; }
+  }
+
+  function renderStandings(torneo, tableId) {
+    const list  = calculateTable(torneo);
+    const table = document.getElementById(tableId);
+    let html = `
+      <thead><tr>
+        <th style="width:40px;">Pos</th><th>Equipo</th>
+        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
+        <th style="width:60px;">Pts</th>
+      </tr></thead><tbody>`;
+    list.forEach((t, i) => {
+      const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
+      const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
+      html += `
+        <tr class="pos-${i+1}">
+          <td><span class="pos-badge">${i+1}</span></td>
+          <td>${t.name} ${t.bonus ? '<span class="bonus-badge">+1 BONUS</span>' : ''}</td>
+          <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+          <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
+          <td class="pts-cell">${t.p}</td>
+        </tr>`;
+    });
+    html += '</tbody>';
+    table.innerHTML = html;
+  }
+
+  function renderTablaAnual() {
+    let annual = {};
+    TEAMS.forEach(t => { annual[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0 }; });
+    ['apertura', 'clausura'].forEach(torneo => {
+      calculateTable(torneo).forEach(t => {
+        annual[t.name].p  += t.p;  annual[t.name].pj += t.pj;
+        annual[t.name].pg += t.pg; annual[t.name].pe += t.pe;
+        annual[t.name].pp += t.pp; annual[t.name].gf += t.gf;
+        annual[t.name].gc += t.gc; annual[t.name].dg += t.dg;
+      });
+    });
+    let arr = Object.keys(annual).map(name => ({ name, ...annual[name] }));
+    arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
+
+    const table = document.getElementById('table-anual');
+    let html = `
+      <thead><tr>
+        <th style="width:40px;">Pos</th><th>Equipo</th>
+        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
+        <th style="width:60px;">Pts Totales</th>
+      </tr></thead><tbody>`;
+    arr.forEach((t, i) => {
+      const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
+      const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
+      html += `
+        <tr class="pos-${i+1}">
+          <td><span class="pos-badge">${i+1}</span></td>
+          <td><strong>${t.name}</strong></td>
+          <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+          <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
+          <td class="pts-cell" style="color:var(--oro);">${t.p}</td>
+        </tr>`;
+    });
+    html += '</tbody>';
+    table.innerHTML = html;
+  }
+
+  // ── FIXTURE ────────────────────────────────────────────────────────────────
+  function renderFixture(torneo, fixtureArr, gridId) {
+    const grid = document.getElementById(gridId);
+    let html = '';
+    fixtureArr.forEach((f, idx) => {
+      const played = state[torneo].find(m =>
+        m.fecha.trim().toLowerCase() === f.fecha.trim().toLowerCase() &&
+        m.home.trim().toLowerCase()  === f.home.trim().toLowerCase()  &&
+        m.away.trim().toLowerCase()  === f.away.trim().toLowerCase()
+      );
+      const statusHtml = played
+        ? `<div class="fixture-status played">JUGADO (${played.ghome} - ${played.gaway})</div>`
+        : `<div class="fixture-status">PENDIENTE</div>`;
+      html += `
+        <div class="fixture-item" onclick="window.selectFixture('${torneo}', ${idx})">
+          <div class="fixture-date">${f.fecha}</div>
+          <div class="fixture-teams">
+            <span>${f.home}</span>
+            <span style="color:var(--verde);font-weight:700;">vs</span>
+            <span>${f.away}</span>
+          </div>
+          ${statusHtml}
+        </div>`;
+    });
+    grid.innerHTML = html;
+  }
+
+  window.selectFixture = function(torneo, idx) {
+    if (!isCommissioner) { showToast('🔒 Debes ingresar como Comisionado'); return; }
+    const fix = torneo === 'apertura' ? FIXTURE_APERTURA[idx] : FIXTURE_CLAUSURA[idx];
+    if (torneo === 'apertura') {
+      document.getElementById('ap-home').value  = fix.home;
+      document.getElementById('ap-away').value  = fix.away;
+      document.getElementById('ap-fecha').value = fix.fecha;
+      document.getElementById('ap-ghome').focus();
+    } else {
+      document.getElementById('cl-home').value  = fix.home;
+      document.getElementById('cl-away').value  = fix.away;
+      document.getElementById('cl-fecha').value = fix.fecha;
+      document.getElementById('cl-ghome').focus();
+    }
+    showToast(`✓ Cargado: ${fix.home} vs ${fix.away}`);
+    updateBonusHint(torneo);
+  };
+
+  // ── PARTIDOS ───────────────────────────────────────────────────────────────
+  async function addMatch(torneo) {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
+    const pfx   = torneo === 'apertura' ? 'ap' : 'cl';
+    const home  = document.getElementById(`${pfx}-home`).value;
+    const away  = document.getElementById(`${pfx}-away`).value;
+    const ghome = parseInt(document.getElementById(`${pfx}-ghome`).value) || 0;
+    const gaway = parseInt(document.getElementById(`${pfx}-gaway`).value) || 0;
+    let fecha   = document.getElementById(`${pfx}-fecha`).value.trim();
+
+    if (home === away) { showToast('❌ Un equipo no puede jugar contra sí mismo'); return; }
+    if (!fecha) fecha = "Manual";
+
+    const dupIdx = state[torneo].findIndex(m => m.fecha === fecha && m.home === home && m.away === away);
+    if (dupIdx !== -1) {
+      state[torneo][dupIdx] = { ...state[torneo][dupIdx], ghome, gaway };
+      showToast('✓ Partido actualizado');
+    } else {
+      state[torneo].push({ id: Date.now() + Math.random(), fecha, home, away, ghome, gaway });
+      showToast('✓ Partido guardado');
+    }
+
+    await saveKey(torneo);
+    triggerFlash(torneo === 'apertura' ? 'table-apertura' : 'table-clausura');
+    document.getElementById(`${pfx}-ghome`).value = 0;
+    document.getElementById(`${pfx}-gaway`).value = 0;
+  }
+
+  async function removeMatch(torneo, id) {
+    if (!isCommissioner) return;
+    state[torneo] = state[torneo].filter(m => m.id !== id);
+    await saveKey(torneo);
+    showToast('✓ Partido eliminado');
+  }
+
+  function renderMatchesList(torneo, containerId) {
+    const container = document.getElementById(containerId);
+    if (state[torneo].length === 0) {
+      container.innerHTML = '<div class="empty-state">No hay partidos cargados</div>';
+      return;
+    }
+    let html = '';
+    state[torneo].forEach(m => {
+      html += `
+        <div class="match-item">
+          <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
+          <div class="score-display">${m.ghome} — ${m.gaway}</div>
+          <div class="round-label">${m.fecha}</div>
+          <button class="btn-danger" onclick="window.removeMatch('${torneo}', ${m.id})">Borrar</button>
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  // ── COPAS ──────────────────────────────────────────────────────────────────
+  async function addCopasMatch() {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
+    const torneo = document.getElementById('copa-torneo').value;
+    const home   = document.getElementById('copa-home').value;
+    const away   = document.getElementById('copa-away').value;
+    const ghome  = parseInt(document.getElementById('copa-ghome').value) || 0;
+    const gaway  = parseInt(document.getElementById('copa-gaway').value) || 0;
+    const nota   = document.getElementById('copa-nota').value.trim();
+
+    if (home === away) { showToast('❌ Cruce inválido'); return; }
+
+    state.copas.push({ id: Date.now(), torneo, home, away, ghome, gaway, nota });
+    await saveKey('copas');
+    showToast('✓ Copa Actualizada');
+  }
+
+  async function removeCopa(id) {
+    if (!isCommissioner) return;
+    state.copas = state.copas.filter(c => c.id !== id);
+    await saveKey('copas');
+    showToast('✓ Registro eliminado');
+  }
+
+  function renderMatchesCopas() {
+    const container = document.getElementById('matches-copas');
+    if (state.copas.length === 0) {
+      container.innerHTML = '<div class="empty-state">No hay cruces de copa cargados</div>';
+      return;
+    }
+    let html = '';
+    state.copas.forEach(c => {
+      html += `
+        <div class="match-item" style="border-left: 3px solid var(--azul);">
+          <div class="teams">
+            <span style="font-size:11px;display:block;color:var(--azul);width:100%;font-weight:700;">${c.torneo}</span>
+            <strong>${c.home}</strong> vs <strong>${c.away}</strong>
+            ${c.nota ? `<span style="color:#666;font-size:12px;">(${c.nota})</span>` : ''}
+          </div>
+          <div class="score-display" style="color:var(--azul);">${c.ghome} — ${c.gaway}</div>
+          <button class="btn-danger" onclick="window.removeCopa(${c.id})">Borrar</button>
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  // ── GOLEADORES ─────────────────────────────────────────────────────────────
+  async function addGol() {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar goles'); return; }
+    const team     = document.getElementById('gol-team').value;
+    const jugador  = document.getElementById('gol-jugador').value.trim();
+    const cantidad = parseInt(document.getElementById('gol-cantidad').value) || 1;
+
+    if (!jugador) { showToast('❌ Nombre del goleador requerido'); return; }
+
+    const match = state.goles.find(g => g.team === team && g.jugador.toLowerCase() === jugador.toLowerCase());
+    if (match) {
+      match.goles += cantidad;
+    } else {
+      state.goles.push({ id: Date.now(), team, jugador, goles: cantidad });
+    }
+
+    await saveKey('goles');
+    document.getElementById('gol-jugador').value  = '';
+    document.getElementById('gol-cantidad').value = 1;
+    showToast('✓ Gol anotado');
+  }
+
+  async function removeGol(id) {
+    if (!isCommissioner) return;
+    state.goles = state.goles.filter(g => g.id !== id);
+    await saveKey('goles');
+    showToast('✓ Registro eliminado');
+  }
+
+  function renderPichichi() {
+    const table = document.getElementById('table-pichichi');
+    const arr   = [...state.goles].sort((a,b) => b.goles - a.goles);
+    if (arr.length === 0) {
+      table.innerHTML = '<tr><td class="empty-state">No hay goles registrados</td></tr>';
+      return;
+    }
+    const maxGoles = arr[0].goles || 1;
+    let html = '';
+    arr.forEach((g, idx) => {
+      const pct = (g.goles / maxGoles) * 100;
+      html += `
+        <tr>
+          <td>#${idx+1}</td>
+          <td>
+            <div style="font-weight:600;font-size:16px;">${g.jugador}</div>
+            <div class="bar-wrap">
+              <span style="color:#666;font-size:12px;min-width:80px;">${g.team}</span>
+              <div class="bar" style="width:${pct}%;min-width:4px;"></div>
+            </div>
+          </td>
+          <td style="width:120px;text-align:right;">
+            <span>${g.goles} ${g.goles === 1 ? 'Gol' : 'Goles'}</span>
+            <button class="btn-danger" style="margin-left:8px;" onclick="window.removeGol(${g.id})">X</button>
+          </td>
+        </tr>`;
+    });
+    table.innerHTML = html;
+  }
+
+  // ── DISCIPLINA ─────────────────────────────────────────────────────────────
+  async function addTarjeta() {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar tarjetas'); return; }
+    const team    = document.getElementById('disc-team').value;
+    const jugador = document.getElementById('disc-jugador').value.trim();
+    const tipo    = document.getElementById('disc-tipo').value;
+
+    if (!jugador) { showToast('❌ Nombre del jugador requerido'); return; }
+
+    state.tarjetas.push({ id: Date.now(), team, jugador, tipo });
+    await saveKey('tarjetas');
+    document.getElementById('disc-jugador').value = '';
+    showToast('✓ Tarjeta Registrada');
+  }
+
+  async function removeTarjeta(id) {
+    if (!isCommissioner) return;
+    state.tarjetas = state.tarjetas.filter(t => t.id !== id);
+    await saveKey('tarjetas');
+    showToast('✓ Tarjeta Removida');
+  }
+
+  function renderDisciplina() {
+    const tbody = document.getElementById('table-disciplina');
+    if (state.tarjetas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Limpio · Sin amonestaciones</td></tr>';
+      return;
+    }
+    let html = '';
+    state.tarjetas.forEach(t => {
+      const badge = t.tipo === 'AMARILLA'
+        ? '<span class="card-amarilla">🟨 AMARILLA</span>'
+        : '<span class="card-roja">🟥 ROJA DIRECTA</span>';
+      html += `
+        <tr>
+          <td style="font-weight:600;">${t.team}</td>
+          <td>${t.jugador}</td>
+          <td>${badge}</td>
+          <td><button class="btn-danger" onclick="window.removeTarjeta(${t.id})">Quitar</button></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ── BONUS HINT ─────────────────────────────────────────────────────────────
+  function updateBonusHint(torneo) {
+    const hint  = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
+    if (!hint) return;
+    const count = state[torneo].length;
+    const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
+    hint.textContent = count === total - 1 ? '¡Próximo partido define +1 Punto Bonus al puntero!'
+                     : count === total     ? 'Torneo finalizado (Bonus ya inyectado)'
+                     :                       'No aplica (se activa en la última fecha)';
+  }
+
+  // ── FLASH ANIMATION ────────────────────────────────────────────────────────
+  function triggerFlash(id) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('flash-updated'); setTimeout(() => el.classList.remove('flash-updated'), 1500); }
+  }
+
+  // ── SELECTS ────────────────────────────────────────────────────────────────
+  function populateSelects() {
+    ['ap-home','ap-away','cl-home','cl-away','copa-home','copa-away','gol-team','disc-team'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = '';
+      TEAMS.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        sel.appendChild(opt);
+      });
+    });
+    if (document.getElementById('ap-away'))   document.getElementById('ap-away').selectedIndex   = 1;
+    if (document.getElementById('cl-away'))   document.getElementById('cl-away').selectedIndex   = 1;
+    if (document.getElementById('copa-away')) document.getElementById('copa-away').selectedIndex = 1;
+  }
+
+  // ── TABS ───────────────────────────────────────────────────────────────────
+  function showTab(tabName, btnEl) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
+  }
+
+  // ── EXPONER AL DOM ─────────────────────────────────────────────────────────
+  window.showTab        = showTab;
+  window.removeMatch    = removeMatch;
+  window.removeCopa     = removeCopa;
+  window.removeGol      = removeGol;
+  window.removeTarjeta  = removeTarjeta;
+  window.tryUnlock      = tryUnlock;
+  window.enterSpectator = enterSpectator;
+  window.promptLogin    = promptLogin;
+
+  // ── EVENT LISTENERS ────────────────────────────────────────────────────────
+  document.getElementById('btn-tab-apertura').addEventListener('click',  e => showTab('apertura',  e.target));
+  document.getElementById('btn-tab-clausura').addEventListener('click',  e => showTab('clausura',  e.target));
+  document.getElementById('btn-tab-anual').addEventListener('click',     e => showTab('anual',     e.target));
+  document.getElementById('btn-tab-copas').addEventListener('click',     e => showTab('copas',     e.target));
+  document.getElementById('btn-tab-pichichi').addEventListener('click',  e => showTab('pichichi',  e.target));
+  document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
+
+  document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
+  document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));
+  document.getElementById('btn-add-clausura').addEventListener('click', () => addMatch('clausura'));
+  document.getElementById('btn-add-copa').addEventListener('click',     addCopasMatch);
+  document.getElementById('btn-add-gol').addEventListener('click',      addGol);
+  document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
+  document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
+  document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
+  document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });
+
+  // ── ARRANCAR ───────────────────────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
