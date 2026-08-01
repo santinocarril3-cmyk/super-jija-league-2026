@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Súper Jija League 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+<div id="loading-bar"></div>
+
+<div id="lock-overlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title" id="lock-title">Súper Jija League</div>
+    <div class="lock-sub" id="lock-sub">Modo Comisionado</div>
+    <input class="lock-input" type="password" id="lock-pwd" placeholder="Contraseña" maxlength="20">
+    <div class="lock-error" id="lock-error"></div>
+    <button class="lock-btn" id="btn-unlock">ENTRAR COMO COMISIONADO</button>
+    <button class="lock-skip hidden" id="btn-spectator">Ver como espectador →</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo-wrap">
+    <span class="logo-main">⚽ Súper Jija League</span>
+    <span class="logo-sub" id="header-sub">Planilla Oficial</span>
+  </div>
+  <div id="mode-badge">
+    <span class="mode-pill spectator" id="mode-pill">ESPECTADOR</span>
+    <button id="btn-toggle-mode">🔑 Comisionado</button>
+    <span class="season-badge">2026</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" id="btn-tab-apertura">🏆 Apertura</button>
+  <button id="btn-tab-clausura">🏆 Clausura</button>
+  <button id="btn-tab-anual">🛡️ Tabla Anual</button>
+  <button id="btn-tab-copas">🥤 Copas</button>
+  <button id="btn-tab-pichichi">⚽ Goleadores</button>
+  <button id="btn-tab-disciplina">🟨 Disciplina</button>
+</nav>
+
+<main>
+
+<div id="tab-apertura" class="tab-content active">
+  <div class="section-title">🏆 Torneo Jija Apertura</div>
+  <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-apertura"></table>
+  </div>
+
+  <div class="fixture-section">
+    <div class="match-list-title">Calendario Oficial (Clic para cargar)</div>
+    <div class="fixture-grid" id="fixture-apertura"></div>
+  </div>
+
+  <div class="match-card">
+    <h3>+ Cargar Partido</h3>
+    <div class="match-input-row">
+      <select id="ap-home"></select>
+      <input type="number" id="ap-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="ap-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+      <select id="ap-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div class="bonus-info-text">
+      <span>Estado Bonus:</span>
+      <span id="bonus-hint">No aplica</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-apertura">AGREGAR</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de partidos jugados</div>
+    <div id="matches-apertura"></div>
+  </div>
+</div>
+
+<div id="tab-clausura" class="tab-content">
+  <div class="section-title">🏆 Torneo Jija Clausura</div>
+  <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-clausura"></table>
+  </div>
+
+  <div class="fixture-section">
+    <div class="match-list-title">Calendario Oficial (Clic para cargar)</div>
+    <div class="fixture-grid" id="fixture-clausura"></div>
+  </div>
+
+  <div class="match-card">
+    <h3>+ Cargar Partido</h3>
+    <div class="match-input-row">
+      <select id="cl-home"></select>
+      <input type="number" id="cl-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="cl-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+      <select id="cl-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div class="bonus-info-text">
+      <span>Estado Bonus:</span>
+      <span id="cl-bonus-hint">No aplica</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-clausura">AGREGAR</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de partidos jugados</div>
+    <div id="matches-clausura"></div>
+  </div>
+</div>
+
+<div id="tab-anual" class="tab-content">
+  <div class="section-title">🛡️ Honorary Shield</div>
+  <div class="section-sub">Acumulado Apertura + Clausura — Define Draft de Invierno</div>
+  <div class="annual-note">
+    <strong>Draft de Invierno:</strong> El orden de selección se ejecuta en sentido <strong>inverso</strong> a las posiciones de esta tabla.<br>
+    <strong>Escudo de Honor:</strong> El equipo con más puntos totales al final de la temporada se consagra ganador.
+  </div>
+  <div class="tarjeta-tabla">
+    <table class="standings-table" id="table-anual"></table>
+  </div>
+</div>
+
+<div id="tab-copas" class="tab-content">
+  <div class="section-title">🥤 Copas</div>
+  <div class="section-sub">Torneos Eliminatorios · 2026</div>
+
+  <div class="copa-card">
+    <h3>🏆 Coca Champions</h3>
+    <p><strong>Formato:</strong> Eliminación directa · Semifinales (ida y vuelta) → Final Única</p>
+    <p><strong>Desempate:</strong> Tiempo suplementario en clase → penales si persiste el empate</p>
+    <div class="premio">🏆 Premio: Cupo directo a la Jija RoosterFight</div>
+  </div>
+
+  <div class="match-card">
+    <h3>⚽ Cargar Partido Copa</h3>
+    <div style="margin-bottom:10px;">
+      <select id="copa-torneo" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;width:100%;">
+        <option value="Coca Champions · SF1 Ida">Coca Champions — SF1 Ida</option>
+        <option value="Coca Champions · SF1 Vuelta">Coca Champions — SF1 Vuelta</option>
+        <option value="Coca Champions · SF2 Ida">Coca Champions — SF2 Ida</option>
+        <option value="Coca Champions · SF2 Vuelta">Coca Champions — SF2 Vuelta</option>
+        <option value="Coca Champions · FINAL">Coca Champions — FINAL</option>
+        <option value="Super Jija Cup · FINAL">Super Jija Cup — FINAL</option>
+        <option value="Jija RoosterFight · FINAL">Jija RoosterFight — FINAL</option>
+      </select>
+    </div>
+    <div class="copa-match">
+      <select id="copa-home"></select>
+      <input type="number" id="copa-ghome" min="0" value="0">
+      <div class="vs-label">VS</div>
+      <input type="number" id="copa-gaway" min="0" value="0">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <select id="copa-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="text" id="copa-nota" placeholder="Nota / Penales (Opcional)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+      <button class="btn-add" id="btn-add-copa">AGREGAR COPA</button>
+    </div>
+  </div>
+
+  <div class="match-list">
+    <div class="match-list-title">Historial de copas</div>
+    <div id="matches-copas"></div>
+  </div>
+</div>
+
+<div id="tab-pichichi" class="tab-content">
+  <div class="section-title">⚽ Goleadores</div>
+  <div class="section-sub">Tabla de goleadores del torneo</div>
+
+  <div class="match-card">
+    <h3>+ Registrar Gol</h3>
+    <div class="add-disc-row">
+      <select id="gol-team"></select>
+      <input type="text" id="gol-jugador" placeholder="Nombre del Jugador" maxlength="30">
+      <input type="number" id="gol-cantidad" value="1" min="1" style="width:70px;text-align:center;">
+      <button class="btn-add" id="btn-add-gol" style="padding:8px 20px; font-size:15px;">+ GOL</button>
+    </div>
+  </div>
+
+  <div class="tarjeta-tabla">
+    <table class="pichichi-table" id="table-pichichi"></table>
+  </div>
+</div>
+
+<div id="tab-disciplina" class="tab-content">
+  <div class="section-title">🟨 Tabla de Disciplina</div>
+  <div class="section-sub">Tarjetas amarillas y rojas acumuladas</div>
+
+  <div class="match-card">
+    <h3>+ Registrar Tarjeta</h3>
+    <div class="add-disc-row">
+      <select id="disc-team"></select>
+      <input type="text" id="disc-jugador" placeholder="Nombre del Jugador" maxlength="30">
+      <select id="disc-tipo" style="max-width:140px;">
+        <option value="AMARILLA">Amarilla 🟨</option>
+        <option value="ROJA">Roja 🟥</option>
+      </select>
+      <button class="btn-add" id="btn-add-tarjeta" style="padding:8px 20px; font-size:15px;">+ TARJETA</button>
+    </div>
+  </div>
+
+  <div class="tarjeta-tabla">
+    <table class="standings-table" style="font-family:'Barlow', sans-serif;">
+      <thead>
+        <tr>
+          <th>Equipo</th>
+          <th>Jugador</th>
+          <th>Sanción</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="table-disciplina"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<div id="toast"></div>
+<div id="firebase-status" class="syncing">⏳ Conectando...</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIREBASE SDK (CDN — no requiere npm ni bundler)
+════════════════════════════════════════════════════════ -->
+
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

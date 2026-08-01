@@ -1,0 +1,641 @@
+:root {
+    --verde: #00FF87;
+    --verde-dark: #00cc6a;
+    --negro: #0a0a0a;
+    --gris-oscuro: #111111;
+    --gris-medio: #1c1c1c;
+    --gris-borde: #2a2a2a;
+    --blanco: #f0f0f0;
+    --rojo: #ff3b3b;
+    --oro: #FFD700;
+    --azul: #4facfe;
+    --purpura: #8a2be2;
+    --purpura-glow: rgba(138, 43, 226, 0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--negro);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 15% 60%, rgba(90, 20, 180, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 25%, rgba(120, 30, 200, 0.09) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 50% 95%, rgba(80, 0, 160, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
+    color: var(--blanco);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-bottom: 2px solid var(--verde);
+    padding: 18px 24px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .logo-wrap { display: flex; flex-direction: column; line-height: 1; }
+  .logo-main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 6vw, 48px);
+    color: var(--verde);
+    letter-spacing: 2px;
+  }
+  .logo-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(10px, 2vw, 13px);
+    color: #666;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .season-badge {
+    background: var(--verde);
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    padding: 4px 12px;
+    letter-spacing: 2px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--gris-oscuro);
+    border-bottom: 1px solid var(--gris-borde);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  nav button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+  }
+  nav button:hover { color: #aaa; }
+  nav button.active {
+    color: var(--verde);
+    border-bottom-color: var(--verde);
+    background: rgba(0,255,135,.04);
+  }
+
+  /* ── MAIN ── */
+  main { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--verde);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-sub {
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* ── TABLA POSICIONES ── */
+  .standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .standings-table thead tr {
+    background: #111;
+    border-bottom: 2px solid var(--verde);
+  }
+  .standings-table th {
+    padding: 12px 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--verde);
+    text-align: center;
+    font-weight: 700;
+  }
+  .standings-table th:nth-child(2) { text-align: left; }
+  .standings-table td {
+    padding: 12px 8px;
+    font-size: 15px;
+    text-align: center;
+    border-bottom: 1px solid var(--gris-borde);
+    transition: background-color 0.3s ease;
+  }
+  .standings-table td:nth-child(2) { text-align: left; font-weight: 600; }
+  .standings-table tr:hover td { background: var(--purpura-glow); }
+
+  .pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--gris-borde);
+    color: #888;
+  }
+  .pos-1 .pos-badge { background: var(--oro); color: #000; }
+  .pos-2 .pos-badge { background: #aaa; color: #000; }
+  .pos-3 .pos-badge { background: #cd7f32; color: #000; }
+
+  .pts-cell {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--verde);
+  }
+  .dg-pos { color: var(--verde); }
+  .dg-neg { color: var(--rojo); }
+
+  .bonus-badge {
+    background: var(--oro);
+    color: #000;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin-left: 6px;
+    letter-spacing: 1px;
+    vertical-align: middle;
+  }
+
+  /* ── CARD CARGAR PARTIDO ── */
+  .match-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(2px);
+  }
+  .match-card h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 14px;
+  }
+
+  .match-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .match-input-row select,
+  .match-input-row input[type=number] {
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .match-input-row select:focus,
+  .match-input-row input:focus { border-color: var(--verde); }
+
+  .match-input-row input[type=number] {
+    width: 60px;
+    text-align: center;
+    font-size: 22px;
+    font-family: 'Bebas Neue', sans-serif;
+    -moz-appearance: textfield;
+  }
+  .match-input-row input[type=number]::-webkit-outer-spin-button,
+  .match-input-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .vs-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: #444;
+    text-align: center;
+  }
+
+  .bonus-info-text {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #bonus-hint, #cl-bonus-hint { color: var(--oro); font-weight: bold; }
+
+  .btn-add {
+    background: linear-gradient(135deg, #8a2be2 0%, #4a0e8f 60%, #1a0540 100%);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s, transform .2s;
+  }
+  .btn-add:hover {
+    background: linear-gradient(135deg, #9a3bf2 0%, #5a1e9f 60%, #2a1060 100%);
+    transform: scale(1.05);
+  }
+  .btn-add:active { transform: scale(.97); }
+
+  .btn-danger {
+    background: none;
+    color: var(--rojo);
+    border: 1px solid var(--rojo);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-danger:hover { background: rgba(255,59,59,.1); }
+
+  /* ── FIXTURE / CALENDARIO CARD ── */
+  .fixture-section {
+    background: rgba(15, 10, 25, 0.6);
+    border: 1px solid var(--gris-borde);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .fixture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .fixture-item {
+    background: var(--gris-oscuro);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fixture-item:hover {
+    border-color: var(--verde);
+    background: rgba(0, 255, 135, 0.03);
+  }
+  .fixture-date {
+    font-size: 11px;
+    color: var(--verde);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .fixture-teams {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .fixture-status {
+    font-size: 11px;
+    text-align: right;
+    color: #555;
+    margin-top: 4px;
+  }
+  .fixture-status.played { color: var(--verde); font-weight: bold; }
+
+  /* ── HISTORIAL PARTIDOS ── */
+  .match-list { margin-bottom: 24px; }
+  .match-list-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .match-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(25, 15, 45, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+  }
+  .match-item:hover { background: rgba(35, 20, 60, 0.85); }
+  .match-item .teams { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .match-item .score-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--verde);
+    letter-spacing: 2px;
+    min-width: 60px;
+    text-align: center;
+  }
+  .match-item .round-label {
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 1px;
+    min-width: 50px;
+    text-align: right;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 28px;
+    color: #333;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px dashed var(--gris-borde);
+    border-radius: 4px;
+  }
+
+  /* ── GOLEADORES ── */
+  .pichichi-table { width: 100%; border-collapse: collapse; }
+  .pichichi-table tr { border-bottom: 1px solid var(--gris-borde); }
+  .pichichi-table td { padding: 12px 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; transition: background-color 0.3s ease; }
+  .pichichi-table td:first-child { color: #555; width: 36px; text-align: center; }
+  .pichichi-table td:last-child { text-align: right; font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--verde); }
+  .pichichi-table tr:hover td { background: var(--purpura-glow); }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar { height: 6px; background: var(--verde); border-radius: 3px; transition: width .4s ease; }
+
+  /* ── COPAS INFO ── */
+  .copa-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--verde);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 18px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(2px);
+  }
+  .copa-card.rojo { border-left-color: var(--rojo); }
+  .copa-card.oro { border-left-color: var(--oro); }
+  .copa-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .copa-card p { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 6px; }
+  .copa-card p strong { color: var(--blanco); }
+  .copa-card .premio {
+    display: inline-block;
+    background: rgba(255,215,0,.1);
+    border: 1px solid var(--oro);
+    color: var(--oro);
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* ── COPA BRACKET ── */
+  .copa-match {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .copa-match select, .copa-match input[type=number] {
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    padding: 9px 10px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .copa-match select:focus, .copa-match input:focus { border-color: var(--verde); }
+  .copa-match input[type=number] {
+    width: 55px; text-align: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+    -moz-appearance: textfield;
+  }
+  .copa-match input[type=number]::-webkit-outer-spin-button,
+  .copa-match input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* ── TABLA ANUAL ── */
+  .annual-note {
+    background: rgba(0,255,135,.05);
+    border: 1px solid rgba(0,255,135,.2);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* ── DISCIPLINA ── */
+  .disc-table { width: 100%; border-collapse: collapse; }
+  .disc-table th { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--verde); padding: 8px; text-align: left; border-bottom: 2px solid var(--verde); }
+  .disc-table td { font-size: 14px; padding: 12px 8px; border-bottom: 1px solid var(--gris-borde); transition: background-color 0.3s ease; }
+  .disc-table td:last-child { text-align: center; }
+  .disc-table tbody tr:hover td { background: var(--purpura-glow); }
+  .card-amarilla { background: var(--oro); color: #000; padding: 1px 6px; border-radius: 2px; font-weight: 700; font-size: 12px; }
+  .card-roja { background: var(--rojo); color: #fff; padding: 1px 6px; border-radius: 2px; font-weight: 700; font-size: 12px; }
+  .add-disc-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .add-disc-row input, .add-disc-row select {
+    background: var(--negro); border: 1px solid var(--gris-borde); color: var(--blanco);
+    font-family: 'Barlow', sans-serif; font-size: 14px; padding: 8px 10px; border-radius: 3px; outline: none;
+    transition: border-color .2s; flex: 1; min-width: 120px;
+  }
+  .add-disc-row input:focus, .add-disc-row select:focus { border-color: var(--verde); }
+
+  /* ── LOADING BAR ── */
+  #loading-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 999;
+    background: linear-gradient(90deg, var(--verde), var(--azul), var(--verde));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite linear;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── MODO COMISIONADO ── */
+  #lock-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(10,10,10,.97);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px;
+    backdrop-filter: blur(4px);
+  }
+  #lock-overlay.hidden { display: none; }
+
+  .lock-box {
+    background: var(--gris-medio);
+    border: 1px solid var(--gris-borde);
+    border-top: 3px solid var(--verde);
+    border-radius: 6px;
+    padding: 32px 28px;
+    width: min(340px, 90vw);
+    text-align: center;
+  }
+  .lock-icon { font-size: 40px; margin-bottom: 8px; }
+  .lock-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: var(--verde);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .lock-sub { font-size: 12px; color: #555; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .lock-input {
+    width: 100%;
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    padding: 12px 14px;
+    border-radius: 3px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  .lock-input:focus { border-color: var(--verde); }
+  .lock-error { color: var(--rojo); font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  .lock-btn {
+    width: 100%;
+    background: var(--verde);
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    border: none;
+    padding: 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s;
+    margin-bottom: 10px;
+  }
+  .lock-btn:hover { background: var(--verde-dark); }
+  .lock-skip {
+    background: none; border: none; color: #444;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; letter-spacing: 1px; cursor: pointer;
+    text-decoration: underline; margin-top: 4px;
+  }
+  .lock-skip:hover { color: #888; }
+
+  #mode-badge { display: flex; align-items: center; gap: 8px; }
+  .mode-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 2px; font-weight: 700;
+  }
+  .mode-pill.spectator { background: rgba(255,255,255,.08); color: #555; }
+  .mode-pill.commissioner { background: rgba(0,255,135,.15); color: var(--verde); border: 1px solid var(--verde); }
+  #btn-toggle-mode {
+    background: none; border: 1px solid var(--gris-borde);
+    color: #555; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; letter-spacing: 1px; padding: 4px 10px;
+    border-radius: 2px; cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  #btn-toggle-mode:hover { border-color: var(--verde); color: var(--verde); }
+
+  /* Ocultar en modo espectador */
+  body.spectator-mode .match-card,
+  body.spectator-mode .add-disc-row,
+  body.spectator-mode .pichichi-table button.btn-danger,
+  body.spectator-mode .btn-danger { display: none !important; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 20px;
+    background: var(--gris-medio); border: 1px solid var(--verde);
+    color: var(--blanco); font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px; letter-spacing: 1px;
+    padding: 12px 20px; border-radius: 4px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; }
+
+  .tarjeta-tabla {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(2px);
+  }
+
+  @keyframes flash-update {
+    0%   { background-color: transparent; }
+    20%  { background-color: rgba(255, 215, 0, 0.22); }
+    100% { background-color: transparent; }
+  }
+  .flash-updated td { animation: flash-update 1.4s ease-out; }
+
+  /* ── FIREBASE STATUS ── */
+  #firebase-status {
+    position: fixed; bottom: 24px; left: 20px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; letter-spacing: 1px;
+    padding: 6px 12px; border-radius: 3px;
+    z-index: 200;
+    transition: all .3s;
+  }
+  #firebase-status.online  { background: rgba(0,255,135,.1); border: 1px solid var(--verde); color: var(--verde); }
+  #firebase-status.offline { background: rgba(255,59,59,.1);  border: 1px solid var(--rojo);  color: var(--rojo); }
+  #firebase-status.syncing { background: rgba(79,172,254,.1); border: 1px solid var(--azul);  color: var(--azul); }
+
+  @media(max-width: 480px) {
+    .match-input-row { grid-template-columns: 1fr auto auto 1fr; gap: 6px; }
+    .match-input-row input[type=number] { width: 48px; }
+    .copa-match { gap: 6px; }
+  }
