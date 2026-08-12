@@ -49,7 +49,7 @@ const FIXTURE_CLAUSURA = [
   { fecha: "Fecha 6", home: "All Stars",   away: "4to Régimen" }
 ];
 
-// Jugadores de ejemplo para la Prueba 1 (se cargan solo si Firebase está vacío)
+// Jugadores de ejemplo (solo se cargan si Firebase no tiene jugadores)
 const SEED_PLAYERS = [
   { name: "Gonza",  team: "All Stars",    position: "Delantero" },
   { name: "Fran",   team: "Real Envido",  position: "Mediocampista" },
@@ -64,6 +64,7 @@ const SEED_PLAYERS = [
 // ── ESTADO LOCAL ─────────────────────────────────────────────────────────
 let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [], players: [] };
 let isCommissioner = false;
+let seedDone = false; // evita seedear múltiples veces
 
 // ── HELPERS FIREBASE ─────────────────────────────────────────────────────
 async function saveKey(key) {
@@ -92,10 +93,11 @@ function subscribeRealtime() {
     state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
     state.players   = data.players   ? Object.values(data.players)   : [];
 
-    // Si no hay jugadores, cargar los de ejemplo (solo una vez)
-    if (state.players.length === 0) {
+    // Seed solo si está completamente vacío y todavía no se intentó
+    if (state.players.length === 0 && !seedDone) {
+      seedDone = true;
       seedPlayers();
-      return; // seedPlayers guarda y el listener se vuelve a disparar
+      return;
     }
 
     renderAll();
@@ -108,13 +110,14 @@ function subscribeRealtime() {
 
 async function seedPlayers() {
   state.players = SEED_PLAYERS.map((p, i) => ({
-    id: Date.now() + i,
+    id: Date.now() + i + Math.random(),
     name: p.name,
     team: p.team,
     position: p.position || "",
     value: 1000,
     lastPuntaje: null,
-    lastMVT: false
+    lastMVT: false,
+    golesTemp: 0
   }));
   await saveKey('players');
   showToast('✓ Jugadores de prueba cargados (todos en $1.000)');
@@ -133,6 +136,7 @@ function hashStr(input) {
 // ── STATUS ───────────────────────────────────────────────────────────────
 function setStatus(s) {
   const el = document.getElementById('firebase-status');
+  if (!el) return;
   el.className = `${s}`;
   el.textContent = s === 'online'  ? '🟢 Firebase Online'
                  : s === 'offline' ? '🔴 Sin conexión'
@@ -141,7 +145,8 @@ function setStatus(s) {
 
 // ── INIT ─────────────────────────────────────────────────────────────────
 async function init() {
-  document.getElementById('loading-bar').style.display = 'none';
+  const bar = document.getElementById('loading-bar');
+  if (bar) bar.style.display = 'none';
   populateSelects();
   subscribeRealtime();
   await checkInitialOverlay();
@@ -151,6 +156,7 @@ async function init() {
 async function checkInitialOverlay() {
   const stored = await getPassword();
   const overlay = document.getElementById('lock-overlay');
+  if (!overlay) return;
   overlay.classList.remove('hidden');
 
   if (!stored) {
@@ -225,9 +231,10 @@ function setCommissionerMode(bool) {
 // ── TOAST ─────────────────────────────────────────────────────────────────
 function showToast(text) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = text;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 3200);
 }
 
 // ── RENDER ALL ────────────────────────────────────────────────────────────
@@ -280,12 +287,16 @@ function calculateTable(torneo) {
 function applyBonus(tableData) {
   let sorted = Object.keys(tableData).map(n => ({ name: n, ...tableData[n] }));
   sorted.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf);
-  if (sorted[0].pj > 0) { tableData[sorted[0].name].p += 1; tableData[sorted[0].name].bonus = 1; }
+  if (sorted[0] && sorted[0].pj > 0) {
+    tableData[sorted[0].name].p += 1;
+    tableData[sorted[0].name].bonus = 1;
+  }
 }
 
 function renderStandings(torneo, tableId) {
   const list  = calculateTable(torneo);
   const table = document.getElementById(tableId);
+  if (!table) return;
   let html = `
     <thead><tr>
       <th style="width:40px;">Pos</th><th>Equipo</th>
@@ -323,6 +334,7 @@ function renderTablaAnual() {
   arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
 
   const table = document.getElementById('table-anual');
+  if (!table) return;
   let html = `
     <thead><tr>
       <th style="width:40px;">Pos</th><th>Equipo</th>
@@ -348,6 +360,7 @@ function renderTablaAnual() {
 // ── FIXTURE ────────────────────────────────────────────────────────────────
 function renderFixture(torneo, fixtureArr, gridId) {
   const grid = document.getElementById(gridId);
+  if (!grid) return;
   let html = '';
   fixtureArr.forEach((f, idx) => {
     const played = state[torneo].find(m =>
@@ -427,6 +440,7 @@ async function removeMatch(torneo, id) {
 
 function renderMatchesList(torneo, containerId) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   if (state[torneo].length === 0) {
     container.innerHTML = '<div class="empty-state">No hay partidos cargados</div>';
     return;
@@ -470,6 +484,7 @@ async function removeCopa(id) {
 
 function renderMatchesCopas() {
   const container = document.getElementById('matches-copas');
+  if (!container) return;
   if (state.copas.length === 0) {
     container.innerHTML = '<div class="empty-state">No hay cruces de copa cargados</div>';
     return;
@@ -521,6 +536,7 @@ async function removeGol(id) {
 
 function renderPichichi() {
   const table = document.getElementById('table-pichichi');
+  if (!table) return;
   const arr   = [...state.goles].sort((a,b) => b.goles - a.goles);
   if (arr.length === 0) {
     table.innerHTML = '<tr><td class="empty-state">No hay goles registrados</td></tr>';
@@ -573,6 +589,7 @@ async function removeTarjeta(id) {
 
 function renderDisciplina() {
   const tbody = document.getElementById('table-disciplina');
+  if (!tbody) return;
   if (state.tarjetas.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Limpio · Sin amonestaciones</td></tr>';
     return;
@@ -594,7 +611,7 @@ function renderDisciplina() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ── MERCADO DE PASES (PRUEBA 1) ────────────────────────────────────────────
+// ── MERCADO DE PASES (PRUEBA 1.1) ──────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════
 
 function formatAlfajores(coins) {
@@ -607,40 +624,64 @@ function formatAlfajores(coins) {
 }
 
 function formatCoins(n) {
-  return "$" + n.toLocaleString("es-AR");
+  return "$" + Number(n).toLocaleString("es-AR");
+}
+
+// Calcula goles totales del jugador desde la tabla de goleadores
+function getPlayerGoals(name, team) {
+  const entry = state.goles.find(g =>
+    g.jugador.toLowerCase() === name.toLowerCase() && g.team === team
+  );
+  return entry ? entry.goles : 0;
 }
 
 async function addPlayer() {
   if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede agregar jugadores'); return; }
-  const name = document.getElementById('player-name').value.trim();
-  const team = document.getElementById('player-team').value;
-  const pos  = document.getElementById('player-pos').value.trim();
+
+  const nameEl = document.getElementById('player-name');
+  const teamEl = document.getElementById('player-team');
+  const posEl  = document.getElementById('player-pos');
+
+  const name = (nameEl.value || "").trim();
+  const team = teamEl.value;
+  const pos  = (posEl.value || "").trim();
 
   if (!name) { showToast('❌ Nombre requerido'); return; }
+
+  // Evitar duplicados
   if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase() && p.team === team)) {
     showToast('❌ Ese jugador ya existe en ese equipo'); return;
   }
 
-  state.players.push({
-    id: Date.now(),
+  const newPlayer = {
+    id: Date.now() + Math.random(),
     name,
     team,
     position: pos,
     value: 1000,
     lastPuntaje: null,
     lastMVT: false
-  });
+  };
 
+  state.players.push(newPlayer);
   await saveKey('players');
-  document.getElementById('player-name').value = '';
-  document.getElementById('player-pos').value = '';
+
+  // Actualización inmediata de UI (no esperar solo al listener)
+  populatePlayerSelects();
+  renderMercado();
+
+  nameEl.value = '';
+  posEl.value = '';
   showToast(`✓ ${name} agregado · Valor inicial $1.000`);
 }
 
 async function addRating() {
   if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar rendimientos'); return; }
+
   const playerId = document.getElementById('rating-player').value;
   const puntaje  = parseFloat(document.getElementById('rating-puntaje').value);
+  const goles    = parseInt(document.getElementById('rating-goles').value) || 0;
+  const asist    = parseInt(document.getElementById('rating-asist').value) || 0;
   const esMVT    = document.getElementById('rating-mvt').checked;
 
   if (!playerId) { showToast('❌ Elegí un jugador'); return; }
@@ -651,6 +692,7 @@ async function addRating() {
   const player = state.players.find(p => String(p.id) === String(playerId));
   if (!player) { showToast('❌ Jugador no encontrado'); return; }
 
+  // ── Cálculo de cotización ──
   const delta = Math.round((puntaje - 6) * 1000);
   const bonus = esMVT ? 500 : 0;
   const oldValue = player.value;
@@ -659,12 +701,42 @@ async function addRating() {
   player.lastPuntaje = puntaje;
   player.lastMVT = esMVT;
 
+  // ── Actualizar tabla de Goleadores si hubo goles ──
+  if (goles > 0) {
+    const existing = state.goles.find(g =>
+      g.team === player.team && g.jugador.toLowerCase() === player.name.toLowerCase()
+    );
+    if (existing) {
+      existing.goles += goles;
+    } else {
+      state.goles.push({
+        id: Date.now(),
+        team: player.team,
+        jugador: player.name,
+        goles: goles
+      });
+    }
+    await saveKey('goles');
+  }
+
   await saveKey('players');
 
-  const sign = (player.value - oldValue) >= 0 ? '+' : '';
-  showToast(`✓ ${player.name}: ${formatCoins(oldValue)} → ${formatCoins(player.value)} (${sign}${formatCoins(player.value - oldValue)})`);
+  // UI inmediata
+  populatePlayerSelects();
+  renderMercado();
+  renderPichichi();
 
+  const change = player.value - oldValue;
+  const sign = change >= 0 ? '+' : '';
+  let msg = `✓ ${player.name}: ${formatCoins(oldValue)} → ${formatCoins(player.value)} (${sign}${formatCoins(change)})`;
+  if (goles > 0) msg += ` · ${goles} gol${goles > 1 ? 'es' : ''}`;
+  if (esMVT) msg += ' · MVT';
+  showToast(msg);
+
+  // Reset form
   document.getElementById('rating-puntaje').value = 6;
+  document.getElementById('rating-goles').value = 0;
+  document.getElementById('rating-asist').value = 0;
   document.getElementById('rating-mvt').checked = false;
 }
 
@@ -672,8 +744,8 @@ function renderMercado() {
   const tbody = document.getElementById('tbody-mercado');
   if (!tbody) return;
 
-  if (state.players.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay jugadores cargados</td></tr>';
+  if (!state.players || state.players.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay jugadores cargados</td></tr>';
     return;
   }
 
@@ -682,14 +754,16 @@ function renderMercado() {
   let html = '';
   sorted.forEach((p, i) => {
     let ratingClass = 'mid';
-    if (p.lastPuntaje !== null) {
+    if (p.lastPuntaje !== null && p.lastPuntaje !== undefined) {
       if (p.lastPuntaje >= 7.5) ratingClass = 'high';
       else if (p.lastPuntaje < 5) ratingClass = 'low';
     }
 
-    const lastTxt = p.lastPuntaje !== null
-      ? `<span class="last-rating ${ratingClass}">${p.lastPuntaje.toFixed(2)}</span>${p.lastMVT ? '<span class="mvt-badge">MVT</span>' : ''}`
+    const lastTxt = (p.lastPuntaje !== null && p.lastPuntaje !== undefined)
+      ? `<span class="last-rating ${ratingClass}">${Number(p.lastPuntaje).toFixed(2)}</span>${p.lastMVT ? '<span class="mvt-badge">MVT</span>' : ''}`
       : '<span style="color:#555;">—</span>';
+
+    const golesJugador = getPlayerGoals(p.name, p.team);
 
     html += `
       <tr class="pos-${i+1}">
@@ -700,6 +774,7 @@ function renderMercado() {
         </td>
         <td style="font-size:13px;color:#aaa;">${p.team}</td>
         <td>${lastTxt}</td>
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--verde);">${golesJugador || '—'}</td>
         <td class="value-coins">${formatCoins(p.value)}</td>
         <td class="value-alfajor">${formatAlfajores(p.value)}</td>
       </tr>`;
@@ -710,21 +785,30 @@ function renderMercado() {
 function populatePlayerSelects() {
   const sel = document.getElementById('rating-player');
   if (!sel) return;
+
   const current = sel.value;
   sel.innerHTML = '<option value="">— Elegir jugador —</option>';
+
+  if (!state.players || state.players.length === 0) return;
+
   const sorted = [...state.players].sort((a, b) => a.name.localeCompare(b.name));
   sorted.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = p.id;
+    opt.value = String(p.id);
     opt.textContent = `${p.name} (${p.team}) · ${formatCoins(p.value)}`;
     sel.appendChild(opt);
   });
-  if (current) sel.value = current;
+
+  // Intentar mantener la selección anterior si sigue existiendo
+  if (current) {
+    const stillExists = sorted.some(p => String(p.id) === String(current));
+    if (stillExists) sel.value = current;
+  }
 }
 
 // ── BONUS HINT ─────────────────────────────────────────────────────────────
 function updateBonusHint(torneo) {
-  const hint  = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
+  const hint = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
   if (!hint) return;
   const count = state[torneo].length;
   const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
@@ -736,7 +820,10 @@ function updateBonusHint(torneo) {
 // ── FLASH ──────────────────────────────────────────────────────────────────
 function triggerFlash(id) {
   const el = document.getElementById(id);
-  if (el) { el.classList.add('flash-updated'); setTimeout(() => el.classList.remove('flash-updated'), 1500); }
+  if (el) {
+    el.classList.add('flash-updated');
+    setTimeout(() => el.classList.remove('flash-updated'), 1500);
+  }
 }
 
 // ── SELECTS ────────────────────────────────────────────────────────────────
@@ -747,7 +834,8 @@ function populateSelects() {
     sel.innerHTML = '';
     TEAMS.forEach(t => {
       const opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
+      opt.value = t;
+      opt.textContent = t;
       sel.appendChild(opt);
     });
   });
@@ -760,7 +848,8 @@ function populateSelects() {
 function showTab(tabName, btnEl) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-  document.getElementById(`tab-${tabName}`).classList.add('active');
+  const tab = document.getElementById(`tab-${tabName}`);
+  if (tab) tab.classList.add('active');
   if (btnEl) btnEl.classList.add('active');
 }
 
@@ -791,7 +880,7 @@ document.getElementById('btn-add-gol').addEventListener('click',      addGol);
 document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
 document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
 document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
-document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });
+document.getElementById('lock-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
 
 // Mercado
 document.getElementById('btn-add-player').addEventListener('click', addPlayer);

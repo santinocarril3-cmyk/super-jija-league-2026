@@ -241,10 +241,10 @@
   </div>
 </div>
 
-<!-- ═══════════════ MERCADO (PRUEBA 1) ═══════════════ -->
+<!-- ═══════════════ MERCADO (PRUEBA 1.1) ═══════════════ -->
 <div id="tab-mercado" class="tab-content">
   <div class="section-title">🍬 Mercado de Pases</div>
-  <div class="section-sub">Cotización en Jija-Coins · Versión de Prueba</div>
+  <div class="section-sub">Cotización en Jija-Coins · Prueba 1.1</div>
 
   <!-- Leyenda de moneda -->
   <div class="currency-legend">
@@ -255,7 +255,8 @@
       <div class="legend-item"><span class="legend-emoji">👑</span> Rasta / Havanna = <strong>$6.000+</strong></div>
     </div>
     <div class="legend-formula">
-      Fórmula: <code>Valor nuevo = Valor anterior + (Puntaje − 6) × 1000</code> · Figura del Partido: <strong>+$500</strong>
+      Fórmula: <code>Valor nuevo = Valor anterior + (Puntaje − 6) × 1000</code> · Figura del Partido: <strong>+$500</strong><br>
+      Mínimo: $1.000 · Los goles también se suman a la tabla de Goleadores
     </div>
   </div>
 
@@ -270,14 +271,27 @@
     </div>
   </div>
 
-  <!-- Formulario cargar rendimiento -->
+  <!-- Formulario cargar rendimiento (estilo FIFA) -->
   <div class="match-card">
     <h3>+ Cargar Rendimiento de Partido</h3>
     <div class="add-disc-row" style="margin-bottom:10px;">
-      <select id="rating-player" style="flex:2;"></select>
-      <input type="number" id="rating-puntaje" placeholder="Puntaje" min="0" max="10" step="0.25" value="6" style="width:90px;text-align:center;">
+      <select id="rating-player" style="flex:2;min-width:160px;"></select>
     </div>
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="add-disc-row" style="margin-bottom:12px;">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:90px;">
+        <label style="font-size:11px;color:#666;letter-spacing:1px;">PUNTAJE</label>
+        <input type="number" id="rating-puntaje" min="0" max="10" step="0.25" value="6.0" style="width:90px;text-align:center;font-size:18px;font-family:'Bebas Neue',sans-serif;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:70px;">
+        <label style="font-size:11px;color:#666;letter-spacing:1px;">GOLES</label>
+        <input type="number" id="rating-goles" min="0" value="0" style="width:70px;text-align:center;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:70px;">
+        <label style="font-size:11px;color:#666;letter-spacing:1px;">ASIST.</label>
+        <input type="number" id="rating-asist" min="0" value="0" style="width:70px;text-align:center;">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
       <label class="mvt-label">
         <input type="checkbox" id="rating-mvt">
         <span>⭐ Figura del Partido (+$500)</span>
@@ -296,6 +310,7 @@
           <th>Jugador</th>
           <th>Equipo</th>
           <th>Último</th>
+          <th>Goles</th>
           <th>Valor</th>
           <th>En Alfajores</th>
         </tr>
