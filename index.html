@@ -6,6 +6,7 @@
 <title>Súper Jija League 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
 
@@ -42,12 +43,10 @@
   <button id="btn-tab-copas">🥤 Copas</button>
   <button id="btn-tab-pichichi">⚽ Goleadores</button>
   <button id="btn-tab-disciplina">🟨 Disciplina</button>
-  <button id="btn-tab-mercado">🍬 Mercado</button>
 </nav>
 
 <main>
 
-<!-- ═══════════════ APERTURA ═══════════════ -->
 <div id="tab-apertura" class="tab-content active">
   <div class="section-title">🏆 Torneo Jija Apertura</div>
   <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
@@ -78,14 +77,8 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
-      <button class="btn-add" id="btn-add-apertura">AGREGAR PARTIDO + PLANILLA</button>
+      <button class="btn-add" id="btn-add-apertura">AGREGAR</button>
     </div>
-
-    <div id="planilla-apertura" class="planilla-section hidden">
-      <div class="match-list-title">Planilla del Partido · Cargar G / A / VL</div>
-      <div id="planilla-apertura-body"></div>
-    </div>
-
   </div>
 
   <div class="match-list">
@@ -94,7 +87,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ CLAUSURA ═══════════════ -->
 <div id="tab-clausura" class="tab-content">
   <div class="section-title">🏆 Torneo Jija Clausura</div>
   <div class="section-sub">Tabla de posiciones · Temporada 2026</div>
@@ -125,14 +117,8 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
-      <button class="btn-add" id="btn-add-clausura">AGREGAR PARTIDO + PLANILLA</button>
+      <button class="btn-add" id="btn-add-clausura">AGREGAR</button>
     </div>
-
-    <div id="planilla-clausura" class="planilla-section hidden">
-      <div class="match-list-title">Planilla del Partido · Cargar G / A / VL</div>
-      <div id="planilla-clausura-body"></div>
-    </div>
-
   </div>
 
   <div class="match-list">
@@ -141,7 +127,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ ANUAL ═══════════════ -->
 <div id="tab-anual" class="tab-content">
   <div class="section-title">🛡️ Honorary Shield</div>
   <div class="section-sub">Acumulado Apertura + Clausura — Define Draft de Invierno</div>
@@ -154,7 +139,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ COPAS ═══════════════ -->
 <div id="tab-copas" class="tab-content">
   <div class="section-title">🥤 Copas</div>
   <div class="section-sub">Torneos Eliminatorios · 2026</div>
@@ -200,7 +184,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ GOLEADORES ═══════════════ -->
 <div id="tab-pichichi" class="tab-content">
   <div class="section-title">⚽ Goleadores</div>
   <div class="section-sub">Tabla de goleadores del torneo</div>
@@ -220,7 +203,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ DISCIPLINA ═══════════════ -->
 <div id="tab-disciplina" class="tab-content">
   <div class="section-title">🟨 Tabla de Disciplina</div>
   <div class="section-sub">Tarjetas amarillas y rojas acumuladas</div>
@@ -253,61 +235,15 @@
   </div>
 </div>
 
-<!-- ═══════════════ MERCADO (PRUEBA 1.1) ═══════════════ -->
-<div id="tab-mercado" class="tab-content">
-  <div class="section-title">🍬 Mercado de Pases</div>
-  <div class="section-sub">Cotización en Jija-Coins · Prueba 2</div>
-
-  <!-- Leyenda de moneda -->
-  <div class="currency-legend">
-    <div class="legend-title">Escala Monetaria Jija</div>
-    <div class="legend-grid">
-      <div class="legend-item"><span class="legend-emoji">🍬</span> 1 Alfajor Simple = <strong>$1.000</strong></div>
-      <div class="legend-item"><span class="legend-emoji">🍫</span> 1 Alfajor Premium = <strong>$2.500</strong></div>
-      <div class="legend-item"><span class="legend-emoji">👑</span> Rasta / Havanna = <strong>$6.000+</strong></div>
-    </div>
-    <div class="legend-formula">
-      Fórmula: <code>Valor nuevo = Valor anterior + (Puntaje − 6) × 1000</code> · Figura del Partido: <strong>+$500</strong><br>
-      Mínimo: $1.000 · Los goles también se suman a la tabla de Goleadores
-    </div>
-  </div>
-
-  <!-- Formulario agregar jugador -->
-  <div class="match-card">
-    <h3>+ Agregar Jugador</h3>
-    <div class="add-disc-row">
-      <input type="text" id="player-name" placeholder="Nombre del jugador" maxlength="25">
-      <select id="player-team"></select>
-      <input type="text" id="player-pos" placeholder="Posición (opcional)" maxlength="20" style="max-width:140px;">
-      <button class="btn-add" id="btn-add-player" style="padding:8px 20px; font-size:15px;">+ JUGADOR</button>
-    </div>
-  </div>
-
-
-  <!-- Ranking de cotizaciones -->
-  <div class="tarjeta-tabla">
-    <div class="match-list-title" style="margin-bottom:12px;">Ranking de Cotización</div>
-    <table class="standings-table" id="table-mercado">
-      <thead>
-        <tr>
-          <th style="width:40px;">#</th>
-          <th>Jugador</th>
-          <th>Equipo</th>
-          <th>Último</th>
-          <th>Goles</th>
-          <th>Valor</th>
-          <th>En Alfajores</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-mercado"></tbody>
-    </table>
-  </div>
-</div>
-
 </main>
 
 <div id="toast"></div>
 <div id="firebase-status" class="syncing">⏳ Conectando...</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIREBASE SDK (CDN — no requiere npm ni bundler)
+════════════════════════════════════════════════════════ -->
+
 
 <script type="module" src="app.js"></script>
 </body>
