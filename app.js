@@ -1,638 +1,801 @@
 import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, get }
-                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, get }
+                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  // ── CONFIG FIREBASE ──────────────────────────────────────────────────────
-  const firebaseConfig = {
-    apiKey:            "AIzaSyAfFOesu6vXGTcATvtBH8IdAbgm6AqfJBY",
-    authDomain:        "superjije.firebaseapp.com",
-    databaseURL:       "https://superjije-default-rtdb.firebaseio.com",
-    projectId:         "superjije",
-    storageBucket:     "superjije.firebasestorage.app",
-    messagingSenderId: "428893538374",
-    appId:             "1:428893538374:web:2ad3d312c409f6e775e247"
-  };
+// ── CONFIG FIREBASE ──────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyAfFOesu6vXGTcATvtBH8IdAbgm6AqfJBY",
+  authDomain:        "superjije.firebaseapp.com",
+  databaseURL:       "https://superjije-default-rtdb.firebaseio.com",
+  projectId:         "superjije",
+  storageBucket:     "superjije.firebasestorage.app",
+  messagingSenderId: "428893538374",
+  appId:             "1:428893538374:web:2ad3d312c409f6e775e247"
+};
 
-  const app      = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
+const app      = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
-  // ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
-  const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
+// ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
+const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
 
-  const FIXTURE_APERTURA = [
-    { fecha: "Fecha 1", home: "All Stars",   away: "Real Envido" },
-    { fecha: "Fecha 1", home: "4to Régimen", away: "Dou FC" },
-    { fecha: "Fecha 2", home: "4to Régimen", away: "Real Envido" },
-    { fecha: "Fecha 2", home: "Dou FC",      away: "All Stars" },
-    { fecha: "Fecha 3", home: "Dou FC",      away: "Real Envido" },
-    { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
-    { fecha: "Fecha 4", home: "Real Envido", away: "All Stars" },
-    { fecha: "Fecha 4", home: "Dou FC",      away: "4to Régimen" },
-    { fecha: "Fecha 5", home: "Real Envido", away: "4to Régimen" },
-    { fecha: "Fecha 5", home: "All Stars",   away: "Dou FC" },
-    { fecha: "Fecha 6", home: "Real Envido", away: "Dou FC" },
-    { fecha: "Fecha 6", home: "4to Régimen", away: "All Stars" }
-  ];
+const FIXTURE_APERTURA = [
+  { fecha: "Fecha 1", home: "All Stars",   away: "Real Envido" },
+  { fecha: "Fecha 1", home: "4to Régimen", away: "Dou FC" },
+  { fecha: "Fecha 2", home: "4to Régimen", away: "Real Envido" },
+  { fecha: "Fecha 2", home: "Dou FC",      away: "All Stars" },
+  { fecha: "Fecha 3", home: "Dou FC",      away: "Real Envido" },
+  { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
+  { fecha: "Fecha 4", home: "Real Envido", away: "All Stars" },
+  { fecha: "Fecha 4", home: "Dou FC",      away: "4to Régimen" },
+  { fecha: "Fecha 5", home: "Real Envido", away: "4to Régimen" },
+  { fecha: "Fecha 5", home: "All Stars",   away: "Dou FC" },
+  { fecha: "Fecha 6", home: "Real Envido", away: "Dou FC" },
+  { fecha: "Fecha 6", home: "4to Régimen", away: "All Stars" }
+];
 
-  const FIXTURE_CLAUSURA = [
-    { fecha: "Fecha 1", home: "Real Envido", away: "All Stars" },
-    { fecha: "Fecha 1", home: "Dou FC",      away: "4to Régimen" },
-    { fecha: "Fecha 2", home: "Real Envido", away: "Dou FC" },
-    { fecha: "Fecha 2", home: "All Stars",   away: "Dou FC" },
-    { fecha: "Fecha 3", home: "Real Envido", away: "Dou FC" },
-    { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
-    { fecha: "Fecha 4", home: "All Stars",   away: "Real Envido" },
-    { fecha: "Fecha 4", home: "4to Régimen", away: "Dou FC" },
-    { fecha: "Fecha 5", home: "4to Régimen", away: "Real Envido" },
-    { fecha: "Fecha 5", home: "Dou FC",      away: "All Stars" },
-    { fecha: "Fecha 6", home: "Dou FC",      away: "Real Envido" },
-    { fecha: "Fecha 6", home: "All Stars",   away: "4to Régimen" }
-  ];
+const FIXTURE_CLAUSURA = [
+  { fecha: "Fecha 1", home: "Real Envido", away: "All Stars" },
+  { fecha: "Fecha 1", home: "Dou FC",      away: "4to Régimen" },
+  { fecha: "Fecha 2", home: "Real Envido", away: "Dou FC" },
+  { fecha: "Fecha 2", home: "All Stars",   away: "Dou FC" },
+  { fecha: "Fecha 3", home: "Real Envido", away: "Dou FC" },
+  { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
+  { fecha: "Fecha 4", home: "All Stars",   away: "Real Envido" },
+  { fecha: "Fecha 4", home: "4to Régimen", away: "Dou FC" },
+  { fecha: "Fecha 5", home: "4to Régimen", away: "Real Envido" },
+  { fecha: "Fecha 5", home: "Dou FC",      away: "All Stars" },
+  { fecha: "Fecha 6", home: "Dou FC",      away: "Real Envido" },
+  { fecha: "Fecha 6", home: "All Stars",   away: "4to Régimen" }
+];
 
-  // ── ESTADO LOCAL (espejo del snapshot de Firebase) ───────────────────────
-  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [] };
-  let isCommissioner = false;
+// Jugadores de ejemplo para la Prueba 1 (se cargan solo si Firebase está vacío)
+const SEED_PLAYERS = [
+  { name: "Gonza",  team: "All Stars",    position: "Delantero" },
+  { name: "Fran",   team: "Real Envido",  position: "Mediocampista" },
+  { name: "Lucho",  team: "4to Régimen",  position: "Defensor" },
+  { name: "Tomi",   team: "Dou FC",       position: "Arquero" },
+  { name: "Mati",   team: "All Stars",    position: "Mediocampista" },
+  { name: "Nacho",  team: "Real Envido",  position: "Delantero" },
+  { name: "Fede",   team: "4to Régimen",  position: "Mediocampista" },
+  { name: "Santi",  team: "Dou FC",       position: "Defensor" }
+];
 
-  // ── HELPERS FIREBASE ─────────────────────────────────────────────────────
+// ── ESTADO LOCAL ─────────────────────────────────────────────────────────
+let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [], players: [] };
+let isCommissioner = false;
 
-  // Guarda una clave del state en Firebase
-  async function saveKey(key) {
-    setStatus('syncing');
-    await set(ref(database, `jija2026/${key}`), state[key]);
+// ── HELPERS FIREBASE ─────────────────────────────────────────────────────
+async function saveKey(key) {
+  setStatus('syncing');
+  await set(ref(database, `jija2026/${key}`), state[key]);
+  setStatus('online');
+}
+
+async function savePassword(hash) {
+  await set(ref(database, 'jija2026/config/comm_pwd'), hash);
+}
+
+async function getPassword() {
+  const snap = await get(ref(database, 'jija2026/config/comm_pwd'));
+  return snap.exists() ? snap.val() : null;
+}
+
+// ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
+function subscribeRealtime() {
+  onValue(ref(database, 'jija2026'), (snapshot) => {
+    const data = snapshot.val() || {};
+    state.apertura  = data.apertura  ? Object.values(data.apertura)  : [];
+    state.clausura  = data.clausura  ? Object.values(data.clausura)  : [];
+    state.copas     = data.copas     ? Object.values(data.copas)     : [];
+    state.goles     = data.goles     ? Object.values(data.goles)     : [];
+    state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
+    state.players   = data.players   ? Object.values(data.players)   : [];
+
+    // Si no hay jugadores, cargar los de ejemplo (solo una vez)
+    if (state.players.length === 0) {
+      seedPlayers();
+      return; // seedPlayers guarda y el listener se vuelve a disparar
+    }
+
+    renderAll();
     setStatus('online');
+  }, (error) => {
+    console.error(error);
+    setStatus('offline');
+  });
+}
+
+async function seedPlayers() {
+  state.players = SEED_PLAYERS.map((p, i) => ({
+    id: Date.now() + i,
+    name: p.name,
+    team: p.team,
+    position: p.position || "",
+    value: 1000,
+    lastPuntaje: null,
+    lastMVT: false
+  }));
+  await saveKey('players');
+  showToast('✓ Jugadores de prueba cargados (todos en $1.000)');
+}
+
+// ── HASH ─────────────────────────────────────────────────────────────────
+function hashStr(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
   }
+  return hash.toString();
+}
 
-  // Guarda la contraseña del comisionado en Firebase
-  async function savePassword(hash) {
-    await set(ref(database, 'jija2026/config/comm_pwd'), hash);
+// ── STATUS ───────────────────────────────────────────────────────────────
+function setStatus(s) {
+  const el = document.getElementById('firebase-status');
+  el.className = `${s}`;
+  el.textContent = s === 'online'  ? '🟢 Firebase Online'
+                 : s === 'offline' ? '🔴 Sin conexión'
+                 :                   '⏳ Sincronizando...';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('loading-bar').style.display = 'none';
+  populateSelects();
+  subscribeRealtime();
+  await checkInitialOverlay();
+}
+
+// ── OVERLAY / LOGIN ───────────────────────────────────────────────────────
+async function checkInitialOverlay() {
+  const stored = await getPassword();
+  const overlay = document.getElementById('lock-overlay');
+  overlay.classList.remove('hidden');
+
+  if (!stored) {
+    document.getElementById('lock-title').textContent   = 'Crear Contraseña';
+    document.getElementById('lock-sub').textContent     = 'Definí la clave de Comisionado';
+    document.getElementById('btn-unlock').textContent   = 'ESTABLECER CLAVE';
+    document.getElementById('btn-spectator').classList.add('hidden');
+  } else {
+    document.getElementById('btn-spectator').classList.remove('hidden');
   }
+}
 
-  // Lee la contraseña guardada
-  async function getPassword() {
-    const snap = await get(ref(database, 'jija2026/config/comm_pwd'));
-    return snap.exists() ? snap.val() : null;
-  }
+async function tryUnlock() {
+  const input = document.getElementById('lock-pwd').value;
+  const err   = document.getElementById('lock-error');
+  const stored = await getPassword();
 
-  // ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
-  // Cada vez que cualquier otro usuario guarda algo, todos ven la actualización
-  function subscribeRealtime() {
-    onValue(ref(database, 'jija2026'), (snapshot) => {
-      const data = snapshot.val() || {};
-      state.apertura  = data.apertura  ? Object.values(data.apertura)  : [];
-      state.clausura  = data.clausura  ? Object.values(data.clausura)  : [];
-      state.copas     = data.copas     ? Object.values(data.copas)     : [];
-      state.goles     = data.goles     ? Object.values(data.goles)     : [];
-      state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
-      renderAll();
-      setStatus('online');
-    }, (error) => {
-      console.error(error);
-      setStatus('offline');
-    });
-  }
-
-  // ── HASH simple (mismo algoritmo que la versión original) ────────────────
-  function hashStr(input) {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      hash = (hash << 5) - hash + input.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash.toString();
-  }
-
-  // ── STATUS INDICATOR ─────────────────────────────────────────────────────
-  function setStatus(s) {
-    const el = document.getElementById('firebase-status');
-    el.className = `${s}`;
-    el.textContent = s === 'online'  ? '🟢 Firebase Online'
-                   : s === 'offline' ? '🔴 Sin conexión'
-                   :                   '⏳ Sincronizando...';
-  }
-
-  // ── INIT ─────────────────────────────────────────────────────────────────
-  async function init() {
-    document.getElementById('loading-bar').style.display = 'none';
-    populateSelects();
-    subscribeRealtime();       // activa listener en tiempo real
-    await checkInitialOverlay();
-  }
-
-  // ── OVERLAY / LOGIN ───────────────────────────────────────────────────────
-  async function checkInitialOverlay() {
-    const stored = await getPassword();
-    const overlay = document.getElementById('lock-overlay');
-    overlay.classList.remove('hidden');
-
-    if (!stored) {
-      // Primera vez: crear contraseña
-      document.getElementById('lock-title').textContent   = 'Crear Contraseña';
-      document.getElementById('lock-sub').textContent     = 'Definí la clave de Comisionado';
-      document.getElementById('btn-unlock').textContent   = 'ESTABLECER CLAVE';
-      document.getElementById('btn-spectator').classList.add('hidden');
-    } else {
-      document.getElementById('btn-spectator').classList.remove('hidden');
-    }
-  }
-
-  async function tryUnlock() {
-    const input = document.getElementById('lock-pwd').value;
-    const err   = document.getElementById('lock-error');
-    const stored = await getPassword();
-
-    if (!stored) {
-      if (input.length < 4) { err.textContent = '❌ Mínimo 4 caracteres'; return; }
-      await savePassword(hashStr(input));
-      document.getElementById('lock-overlay').classList.add('hidden');
-      setCommissionerMode(true);
-      showToast('✓ Contraseña creada. Sos el Comisionado!');
-    } else if (hashStr(input) === stored) {
-      document.getElementById('lock-overlay').classList.add('hidden');
-      setCommissionerMode(true);
-      showToast('✓ Bienvenido, Comisionado');
-    } else {
-      err.textContent = '❌ Contraseña incorrecta';
-      document.getElementById('lock-pwd').value = '';
-      document.getElementById('lock-pwd').focus();
-    }
-  }
-
-  function enterSpectator() {
+  if (!stored) {
+    if (input.length < 4) { err.textContent = '❌ Mínimo 4 caracteres'; return; }
+    await savePassword(hashStr(input));
     document.getElementById('lock-overlay').classList.add('hidden');
+    setCommissionerMode(true);
+    showToast('✓ Contraseña creada. Sos el Comisionado!');
+  } else if (hashStr(input) === stored) {
+    document.getElementById('lock-overlay').classList.add('hidden');
+    setCommissionerMode(true);
+    showToast('✓ Bienvenido, Comisionado');
+  } else {
+    err.textContent = '❌ Contraseña incorrecta';
+    document.getElementById('lock-pwd').value = '';
+    document.getElementById('lock-pwd').focus();
+  }
+}
+
+function enterSpectator() {
+  document.getElementById('lock-overlay').classList.add('hidden');
+  setCommissionerMode(false);
+  showToast('👁️ Modo Espectador Activo');
+}
+
+async function promptLogin() {
+  if (isCommissioner) {
     setCommissionerMode(false);
-    showToast('👁️ Modo Espectador Activo');
+    showToast('🔒 Cerraste sesión');
+  } else {
+    document.getElementById('lock-overlay').classList.remove('hidden');
+    document.getElementById('lock-error').textContent = '';
+    document.getElementById('lock-pwd').value = '';
+    document.getElementById('lock-pwd').focus();
+    const stored = await getPassword();
+    if (stored) document.getElementById('btn-spectator').classList.remove('hidden');
   }
+}
 
-  async function promptLogin() {
-    if (isCommissioner) {
-      setCommissionerMode(false);
-      showToast('🔒 Cerraste sesión');
+function setCommissionerMode(bool) {
+  isCommissioner = bool;
+  const badge     = document.getElementById('mode-pill');
+  const toggleBtn = document.getElementById('btn-toggle-mode');
+  if (bool) {
+    document.body.classList.remove('spectator-mode');
+    badge.textContent = "COMISIONADO";
+    badge.className   = "mode-pill commissioner";
+    toggleBtn.textContent = "🔒 Salir";
+  } else {
+    document.body.classList.add('spectator-mode');
+    badge.textContent = "ESPECTADOR";
+    badge.className   = "mode-pill spectator";
+    toggleBtn.textContent = "🔑 Comisionado";
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────
+function renderAll() {
+  renderStandings('apertura', 'table-apertura');
+  renderStandings('clausura', 'table-clausura');
+  renderTablaAnual();
+  renderFixture('apertura', FIXTURE_APERTURA, 'fixture-apertura');
+  renderFixture('clausura', FIXTURE_CLAUSURA, 'fixture-clausura');
+  renderMatchesList('apertura', 'matches-apertura');
+  renderMatchesList('clausura', 'matches-clausura');
+  renderMatchesCopas();
+  renderPichichi();
+  renderDisciplina();
+  renderMercado();
+  populatePlayerSelects();
+}
+
+// ── TABLA DE POSICIONES ───────────────────────────────────────────────────
+function calculateTable(torneo) {
+  let data = {};
+  TEAMS.forEach(t => { data[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, bonus:0 }; });
+
+  state[torneo].forEach(m => {
+    if (!data[m.home] || !data[m.away]) return;
+    data[m.home].pj++; data[m.away].pj++;
+    data[m.home].gf += m.ghome; data[m.home].gc += m.gaway;
+    data[m.away].gf += m.gaway; data[m.away].gc += m.ghome;
+
+    if (m.ghome > m.gaway) {
+      data[m.home].pg++; data[m.home].p += 3; data[m.away].pp++;
+    } else if (m.ghome < m.gaway) {
+      data[m.away].pg++; data[m.away].p += 3; data[m.home].pp++;
     } else {
-      document.getElementById('lock-overlay').classList.remove('hidden');
-      document.getElementById('lock-error').textContent = '';
-      document.getElementById('lock-pwd').value = '';
-      document.getElementById('lock-pwd').focus();
-      // Asegurar que el botón espectador esté visible si ya hay contraseña
-      const stored = await getPassword();
-      if (stored) document.getElementById('btn-spectator').classList.remove('hidden');
+      data[m.home].pe++; data[m.away].pe++;
+      data[m.home].p += 1; data[m.away].p += 1;
     }
-  }
+  });
 
-  function setCommissionerMode(bool) {
-    isCommissioner = bool;
-    const badge     = document.getElementById('mode-pill');
-    const toggleBtn = document.getElementById('btn-toggle-mode');
-    if (bool) {
-      document.body.classList.remove('spectator-mode');
-      badge.textContent = "COMISIONADO";
-      badge.className   = "mode-pill commissioner";
-      toggleBtn.textContent = "🔒 Salir";
-    } else {
-      document.body.classList.add('spectator-mode');
-      badge.textContent = "ESPECTADOR";
-      badge.className   = "mode-pill spectator";
-      toggleBtn.textContent = "🔑 Comisionado";
-    }
-  }
+  TEAMS.forEach(t => { data[t].dg = data[t].gf - data[t].gc; });
 
-  // ── TOAST ─────────────────────────────────────────────────────────────────
-  function showToast(text) {
-    const t = document.getElementById('toast');
-    t.textContent = text;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-  }
+  const totalFechas = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
+  if (state[torneo].length === totalFechas) applyBonus(data);
 
-  // ── RENDER ALL ────────────────────────────────────────────────────────────
-  function renderAll() {
-    renderStandings('apertura', 'table-apertura');
-    renderStandings('clausura', 'table-clausura');
-    renderTablaAnual();
-    renderFixture('apertura', FIXTURE_APERTURA, 'fixture-apertura');
-    renderFixture('clausura', FIXTURE_CLAUSURA, 'fixture-clausura');
-    renderMatchesList('apertura', 'matches-apertura');
-    renderMatchesList('clausura', 'matches-clausura');
-    renderMatchesCopas();
-    renderPichichi();
-    renderDisciplina();
-  }
+  let arr = Object.keys(data).map(name => ({ name, ...data[name] }));
+  arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
+  return arr;
+}
 
-  // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
-  function calculateTable(torneo) {
-    let data = {};
-    TEAMS.forEach(t => { data[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, bonus:0 }; });
+function applyBonus(tableData) {
+  let sorted = Object.keys(tableData).map(n => ({ name: n, ...tableData[n] }));
+  sorted.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf);
+  if (sorted[0].pj > 0) { tableData[sorted[0].name].p += 1; tableData[sorted[0].name].bonus = 1; }
+}
 
-    state[torneo].forEach(m => {
-      if (!data[m.home] || !data[m.away]) return;
-      data[m.home].pj++; data[m.away].pj++;
-      data[m.home].gf += m.ghome; data[m.home].gc += m.gaway;
-      data[m.away].gf += m.gaway; data[m.away].gc += m.ghome;
+function renderStandings(torneo, tableId) {
+  const list  = calculateTable(torneo);
+  const table = document.getElementById(tableId);
+  let html = `
+    <thead><tr>
+      <th style="width:40px;">Pos</th><th>Equipo</th>
+      <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
+      <th style="width:60px;">Pts</th>
+    </tr></thead><tbody>`;
+  list.forEach((t, i) => {
+    const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
+    const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
+    html += `
+      <tr class="pos-${i+1}">
+        <td><span class="pos-badge">${i+1}</span></td>
+        <td>${t.name} ${t.bonus ? '<span class="bonus-badge">+1 BONUS</span>' : ''}</td>
+        <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+        <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
+        <td class="pts-cell">${t.p}</td>
+      </tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
 
-      if (m.ghome > m.gaway) {
-        data[m.home].pg++; data[m.home].p += 3; data[m.away].pp++;
-      } else if (m.ghome < m.gaway) {
-        data[m.away].pg++; data[m.away].p += 3; data[m.home].pp++;
-      } else {
-        data[m.home].pe++; data[m.away].pe++;
-        data[m.home].p += 1; data[m.away].p += 1;
-      }
+function renderTablaAnual() {
+  let annual = {};
+  TEAMS.forEach(t => { annual[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0 }; });
+  ['apertura', 'clausura'].forEach(torneo => {
+    calculateTable(torneo).forEach(t => {
+      annual[t.name].p  += t.p;  annual[t.name].pj += t.pj;
+      annual[t.name].pg += t.pg; annual[t.name].pe += t.pe;
+      annual[t.name].pp += t.pp; annual[t.name].gf += t.gf;
+      annual[t.name].gc += t.gc; annual[t.name].dg += t.dg;
     });
+  });
+  let arr = Object.keys(annual).map(name => ({ name, ...annual[name] }));
+  arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
 
-    TEAMS.forEach(t => { data[t].dg = data[t].gf - data[t].gc; });
+  const table = document.getElementById('table-anual');
+  let html = `
+    <thead><tr>
+      <th style="width:40px;">Pos</th><th>Equipo</th>
+      <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
+      <th style="width:60px;">Pts Totales</th>
+    </tr></thead><tbody>`;
+  arr.forEach((t, i) => {
+    const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
+    const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
+    html += `
+      <tr class="pos-${i+1}">
+        <td><span class="pos-badge">${i+1}</span></td>
+        <td><strong>${t.name}</strong></td>
+        <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+        <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
+        <td class="pts-cell" style="color:var(--oro);">${t.p}</td>
+      </tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
 
-    const totalFechas = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
-    if (state[torneo].length === totalFechas) applyBonus(data);
+// ── FIXTURE ────────────────────────────────────────────────────────────────
+function renderFixture(torneo, fixtureArr, gridId) {
+  const grid = document.getElementById(gridId);
+  let html = '';
+  fixtureArr.forEach((f, idx) => {
+    const played = state[torneo].find(m =>
+      m.fecha.trim().toLowerCase() === f.fecha.trim().toLowerCase() &&
+      m.home.trim().toLowerCase()  === f.home.trim().toLowerCase()  &&
+      m.away.trim().toLowerCase()  === f.away.trim().toLowerCase()
+    );
+    const statusHtml = played
+      ? `<div class="fixture-status played">JUGADO (${played.ghome} - ${played.gaway})</div>`
+      : `<div class="fixture-status">PENDIENTE</div>`;
+    html += `
+      <div class="fixture-item" onclick="window.selectFixture('${torneo}', ${idx})">
+        <div class="fixture-date">${f.fecha}</div>
+        <div class="fixture-teams">
+          <span>${f.home}</span>
+          <span style="color:var(--verde);font-weight:700;">vs</span>
+          <span>${f.away}</span>
+        </div>
+        ${statusHtml}
+      </div>`;
+  });
+  grid.innerHTML = html;
+}
 
-    let arr = Object.keys(data).map(name => ({ name, ...data[name] }));
-    arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
-    return arr;
+window.selectFixture = function(torneo, idx) {
+  if (!isCommissioner) { showToast('🔒 Debes ingresar como Comisionado'); return; }
+  const fix = torneo === 'apertura' ? FIXTURE_APERTURA[idx] : FIXTURE_CLAUSURA[idx];
+  if (torneo === 'apertura') {
+    document.getElementById('ap-home').value  = fix.home;
+    document.getElementById('ap-away').value  = fix.away;
+    document.getElementById('ap-fecha').value = fix.fecha;
+    document.getElementById('ap-ghome').focus();
+  } else {
+    document.getElementById('cl-home').value  = fix.home;
+    document.getElementById('cl-away').value  = fix.away;
+    document.getElementById('cl-fecha').value = fix.fecha;
+    document.getElementById('cl-ghome').focus();
+  }
+  showToast(`✓ Cargado: ${fix.home} vs ${fix.away}`);
+  updateBonusHint(torneo);
+};
+
+// ── PARTIDOS ───────────────────────────────────────────────────────────────
+async function addMatch(torneo) {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
+  const pfx   = torneo === 'apertura' ? 'ap' : 'cl';
+  const home  = document.getElementById(`${pfx}-home`).value;
+  const away  = document.getElementById(`${pfx}-away`).value;
+  const ghome = parseInt(document.getElementById(`${pfx}-ghome`).value) || 0;
+  const gaway = parseInt(document.getElementById(`${pfx}-gaway`).value) || 0;
+  let fecha   = document.getElementById(`${pfx}-fecha`).value.trim();
+
+  if (home === away) { showToast('❌ Un equipo no puede jugar contra sí mismo'); return; }
+  if (!fecha) fecha = "Manual";
+
+  const dupIdx = state[torneo].findIndex(m => m.fecha === fecha && m.home === home && m.away === away);
+  if (dupIdx !== -1) {
+    state[torneo][dupIdx] = { ...state[torneo][dupIdx], ghome, gaway };
+    showToast('✓ Partido actualizado');
+  } else {
+    state[torneo].push({ id: Date.now() + Math.random(), fecha, home, away, ghome, gaway });
+    showToast('✓ Partido guardado');
   }
 
-  function applyBonus(tableData) {
-    let sorted = Object.keys(tableData).map(n => ({ name: n, ...tableData[n] }));
-    sorted.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf);
-    if (sorted[0].pj > 0) { tableData[sorted[0].name].p += 1; tableData[sorted[0].name].bonus = 1; }
+  await saveKey(torneo);
+  triggerFlash(torneo === 'apertura' ? 'table-apertura' : 'table-clausura');
+  document.getElementById(`${pfx}-ghome`).value = 0;
+  document.getElementById(`${pfx}-gaway`).value = 0;
+}
+
+async function removeMatch(torneo, id) {
+  if (!isCommissioner) return;
+  state[torneo] = state[torneo].filter(m => m.id !== id);
+  await saveKey(torneo);
+  showToast('✓ Partido eliminado');
+}
+
+function renderMatchesList(torneo, containerId) {
+  const container = document.getElementById(containerId);
+  if (state[torneo].length === 0) {
+    container.innerHTML = '<div class="empty-state">No hay partidos cargados</div>';
+    return;
+  }
+  let html = '';
+  state[torneo].forEach(m => {
+    html += `
+      <div class="match-item">
+        <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
+        <div class="score-display">${m.ghome} — ${m.gaway}</div>
+        <div class="round-label">${m.fecha}</div>
+        <button class="btn-danger" onclick="window.removeMatch('${torneo}', ${m.id})">Borrar</button>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ── COPAS ──────────────────────────────────────────────────────────────────
+async function addCopasMatch() {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
+  const torneo = document.getElementById('copa-torneo').value;
+  const home   = document.getElementById('copa-home').value;
+  const away   = document.getElementById('copa-away').value;
+  const ghome  = parseInt(document.getElementById('copa-ghome').value) || 0;
+  const gaway  = parseInt(document.getElementById('copa-gaway').value) || 0;
+  const nota   = document.getElementById('copa-nota').value.trim();
+
+  if (home === away) { showToast('❌ Cruce inválido'); return; }
+
+  state.copas.push({ id: Date.now(), torneo, home, away, ghome, gaway, nota });
+  await saveKey('copas');
+  showToast('✓ Copa Actualizada');
+}
+
+async function removeCopa(id) {
+  if (!isCommissioner) return;
+  state.copas = state.copas.filter(c => c.id !== id);
+  await saveKey('copas');
+  showToast('✓ Registro eliminado');
+}
+
+function renderMatchesCopas() {
+  const container = document.getElementById('matches-copas');
+  if (state.copas.length === 0) {
+    container.innerHTML = '<div class="empty-state">No hay cruces de copa cargados</div>';
+    return;
+  }
+  let html = '';
+  state.copas.forEach(c => {
+    html += `
+      <div class="match-item" style="border-left: 3px solid var(--azul);">
+        <div class="teams">
+          <span style="font-size:11px;display:block;color:var(--azul);width:100%;font-weight:700;">${c.torneo}</span>
+          <strong>${c.home}</strong> vs <strong>${c.away}</strong>
+          ${c.nota ? `<span style="color:#666;font-size:12px;">(${c.nota})</span>` : ''}
+        </div>
+        <div class="score-display" style="color:var(--azul);">${c.ghome} — ${c.gaway}</div>
+        <button class="btn-danger" onclick="window.removeCopa(${c.id})">Borrar</button>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ── GOLEADORES ─────────────────────────────────────────────────────────────
+async function addGol() {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar goles'); return; }
+  const team     = document.getElementById('gol-team').value;
+  const jugador  = document.getElementById('gol-jugador').value.trim();
+  const cantidad = parseInt(document.getElementById('gol-cantidad').value) || 1;
+
+  if (!jugador) { showToast('❌ Nombre del goleador requerido'); return; }
+
+  const match = state.goles.find(g => g.team === team && g.jugador.toLowerCase() === jugador.toLowerCase());
+  if (match) {
+    match.goles += cantidad;
+  } else {
+    state.goles.push({ id: Date.now(), team, jugador, goles: cantidad });
   }
 
-  function renderStandings(torneo, tableId) {
-    const list  = calculateTable(torneo);
-    const table = document.getElementById(tableId);
-    let html = `
-      <thead><tr>
-        <th style="width:40px;">Pos</th><th>Equipo</th>
-        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
-        <th style="width:60px;">Pts</th>
-      </tr></thead><tbody>`;
-    list.forEach((t, i) => {
-      const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
-      const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
-      html += `
-        <tr class="pos-${i+1}">
-          <td><span class="pos-badge">${i+1}</span></td>
-          <td>${t.name} ${t.bonus ? '<span class="bonus-badge">+1 BONUS</span>' : ''}</td>
-          <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
-          <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
-          <td class="pts-cell">${t.p}</td>
-        </tr>`;
-    });
-    html += '</tbody>';
-    table.innerHTML = html;
+  await saveKey('goles');
+  document.getElementById('gol-jugador').value  = '';
+  document.getElementById('gol-cantidad').value = 1;
+  showToast('✓ Gol anotado');
+}
+
+async function removeGol(id) {
+  if (!isCommissioner) return;
+  state.goles = state.goles.filter(g => g.id !== id);
+  await saveKey('goles');
+  showToast('✓ Registro eliminado');
+}
+
+function renderPichichi() {
+  const table = document.getElementById('table-pichichi');
+  const arr   = [...state.goles].sort((a,b) => b.goles - a.goles);
+  if (arr.length === 0) {
+    table.innerHTML = '<tr><td class="empty-state">No hay goles registrados</td></tr>';
+    return;
   }
-
-  function renderTablaAnual() {
-    let annual = {};
-    TEAMS.forEach(t => { annual[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0 }; });
-    ['apertura', 'clausura'].forEach(torneo => {
-      calculateTable(torneo).forEach(t => {
-        annual[t.name].p  += t.p;  annual[t.name].pj += t.pj;
-        annual[t.name].pg += t.pg; annual[t.name].pe += t.pe;
-        annual[t.name].pp += t.pp; annual[t.name].gf += t.gf;
-        annual[t.name].gc += t.gc; annual[t.name].dg += t.dg;
-      });
-    });
-    let arr = Object.keys(annual).map(name => ({ name, ...annual[name] }));
-    arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
-
-    const table = document.getElementById('table-anual');
-    let html = `
-      <thead><tr>
-        <th style="width:40px;">Pos</th><th>Equipo</th>
-        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th>
-        <th style="width:60px;">Pts Totales</th>
-      </tr></thead><tbody>`;
-    arr.forEach((t, i) => {
-      const dgClass = t.dg > 0 ? 'dg-pos' : (t.dg < 0 ? 'dg-neg' : '');
-      const dgSign  = t.dg > 0 ? `+${t.dg}` : t.dg;
-      html += `
-        <tr class="pos-${i+1}">
-          <td><span class="pos-badge">${i+1}</span></td>
-          <td><strong>${t.name}</strong></td>
-          <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
-          <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
-          <td class="pts-cell" style="color:var(--oro);">${t.p}</td>
-        </tr>`;
-    });
-    html += '</tbody>';
-    table.innerHTML = html;
-  }
-
-  // ── FIXTURE ────────────────────────────────────────────────────────────────
-  function renderFixture(torneo, fixtureArr, gridId) {
-    const grid = document.getElementById(gridId);
-    let html = '';
-    fixtureArr.forEach((f, idx) => {
-      const played = state[torneo].find(m =>
-        m.fecha.trim().toLowerCase() === f.fecha.trim().toLowerCase() &&
-        m.home.trim().toLowerCase()  === f.home.trim().toLowerCase()  &&
-        m.away.trim().toLowerCase()  === f.away.trim().toLowerCase()
-      );
-      const statusHtml = played
-        ? `<div class="fixture-status played">JUGADO (${played.ghome} - ${played.gaway})</div>`
-        : `<div class="fixture-status">PENDIENTE</div>`;
-      html += `
-        <div class="fixture-item" onclick="window.selectFixture('${torneo}', ${idx})">
-          <div class="fixture-date">${f.fecha}</div>
-          <div class="fixture-teams">
-            <span>${f.home}</span>
-            <span style="color:var(--verde);font-weight:700;">vs</span>
-            <span>${f.away}</span>
+  const maxGoles = arr[0].goles || 1;
+  let html = '';
+  arr.forEach((g, idx) => {
+    const pct = (g.goles / maxGoles) * 100;
+    html += `
+      <tr>
+        <td>#${idx+1}</td>
+        <td>
+          <div style="font-weight:600;font-size:16px;">${g.jugador}</div>
+          <div class="bar-wrap">
+            <span style="color:#666;font-size:12px;min-width:80px;">${g.team}</span>
+            <div class="bar" style="width:${pct}%;min-width:4px;"></div>
           </div>
-          ${statusHtml}
-        </div>`;
+        </td>
+        <td style="width:120px;text-align:right;">
+          <span>${g.goles} ${g.goles === 1 ? 'Gol' : 'Goles'}</span>
+          <button class="btn-danger" style="margin-left:8px;" onclick="window.removeGol(${g.id})">X</button>
+        </td>
+      </tr>`;
+  });
+  table.innerHTML = html;
+}
+
+// ── DISCIPLINA ─────────────────────────────────────────────────────────────
+async function addTarjeta() {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar tarjetas'); return; }
+  const team    = document.getElementById('disc-team').value;
+  const jugador = document.getElementById('disc-jugador').value.trim();
+  const tipo    = document.getElementById('disc-tipo').value;
+
+  if (!jugador) { showToast('❌ Nombre del jugador requerido'); return; }
+
+  state.tarjetas.push({ id: Date.now(), team, jugador, tipo });
+  await saveKey('tarjetas');
+  document.getElementById('disc-jugador').value = '';
+  showToast('✓ Tarjeta Registrada');
+}
+
+async function removeTarjeta(id) {
+  if (!isCommissioner) return;
+  state.tarjetas = state.tarjetas.filter(t => t.id !== id);
+  await saveKey('tarjetas');
+  showToast('✓ Tarjeta Removida');
+}
+
+function renderDisciplina() {
+  const tbody = document.getElementById('table-disciplina');
+  if (state.tarjetas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Limpio · Sin amonestaciones</td></tr>';
+    return;
+  }
+  let html = '';
+  state.tarjetas.forEach(t => {
+    const badge = t.tipo === 'AMARILLA'
+      ? '<span class="card-amarilla">🟨 AMARILLA</span>'
+      : '<span class="card-roja">🟥 ROJA DIRECTA</span>';
+    html += `
+      <tr>
+        <td style="font-weight:600;">${t.team}</td>
+        <td>${t.jugador}</td>
+        <td>${badge}</td>
+        <td><button class="btn-danger" onclick="window.removeTarjeta(${t.id})">Quitar</button></td>
+      </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ── MERCADO DE PASES (PRUEBA 1) ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+
+function formatAlfajores(coins) {
+  if (coins < 1000) return "Menos de 1 Alfajor";
+  const simples = Math.floor(coins / 1000);
+  const resto = coins % 1000;
+  let txt = `${simples} Alfajor${simples !== 1 ? 'es' : ''} Simple`;
+  if (resto >= 500) txt += " + medio";
+  return txt;
+}
+
+function formatCoins(n) {
+  return "$" + n.toLocaleString("es-AR");
+}
+
+async function addPlayer() {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede agregar jugadores'); return; }
+  const name = document.getElementById('player-name').value.trim();
+  const team = document.getElementById('player-team').value;
+  const pos  = document.getElementById('player-pos').value.trim();
+
+  if (!name) { showToast('❌ Nombre requerido'); return; }
+  if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase() && p.team === team)) {
+    showToast('❌ Ese jugador ya existe en ese equipo'); return;
+  }
+
+  state.players.push({
+    id: Date.now(),
+    name,
+    team,
+    position: pos,
+    value: 1000,
+    lastPuntaje: null,
+    lastMVT: false
+  });
+
+  await saveKey('players');
+  document.getElementById('player-name').value = '';
+  document.getElementById('player-pos').value = '';
+  showToast(`✓ ${name} agregado · Valor inicial $1.000`);
+}
+
+async function addRating() {
+  if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar rendimientos'); return; }
+  const playerId = document.getElementById('rating-player').value;
+  const puntaje  = parseFloat(document.getElementById('rating-puntaje').value);
+  const esMVT    = document.getElementById('rating-mvt').checked;
+
+  if (!playerId) { showToast('❌ Elegí un jugador'); return; }
+  if (isNaN(puntaje) || puntaje < 0 || puntaje > 10) {
+    showToast('❌ Puntaje debe ser entre 0 y 10'); return;
+  }
+
+  const player = state.players.find(p => String(p.id) === String(playerId));
+  if (!player) { showToast('❌ Jugador no encontrado'); return; }
+
+  const delta = Math.round((puntaje - 6) * 1000);
+  const bonus = esMVT ? 500 : 0;
+  const oldValue = player.value;
+
+  player.value = Math.max(1000, player.value + delta + bonus);
+  player.lastPuntaje = puntaje;
+  player.lastMVT = esMVT;
+
+  await saveKey('players');
+
+  const sign = (player.value - oldValue) >= 0 ? '+' : '';
+  showToast(`✓ ${player.name}: ${formatCoins(oldValue)} → ${formatCoins(player.value)} (${sign}${formatCoins(player.value - oldValue)})`);
+
+  document.getElementById('rating-puntaje').value = 6;
+  document.getElementById('rating-mvt').checked = false;
+}
+
+function renderMercado() {
+  const tbody = document.getElementById('tbody-mercado');
+  if (!tbody) return;
+
+  if (state.players.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay jugadores cargados</td></tr>';
+    return;
+  }
+
+  const sorted = [...state.players].sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+
+  let html = '';
+  sorted.forEach((p, i) => {
+    let ratingClass = 'mid';
+    if (p.lastPuntaje !== null) {
+      if (p.lastPuntaje >= 7.5) ratingClass = 'high';
+      else if (p.lastPuntaje < 5) ratingClass = 'low';
+    }
+
+    const lastTxt = p.lastPuntaje !== null
+      ? `<span class="last-rating ${ratingClass}">${p.lastPuntaje.toFixed(2)}</span>${p.lastMVT ? '<span class="mvt-badge">MVT</span>' : ''}`
+      : '<span style="color:#555;">—</span>';
+
+    html += `
+      <tr class="pos-${i+1}">
+        <td><span class="pos-badge">${i+1}</span></td>
+        <td>
+          <strong>${p.name}</strong>
+          ${p.position ? `<div style="font-size:11px;color:#666;">${p.position}</div>` : ''}
+        </td>
+        <td style="font-size:13px;color:#aaa;">${p.team}</td>
+        <td>${lastTxt}</td>
+        <td class="value-coins">${formatCoins(p.value)}</td>
+        <td class="value-alfajor">${formatAlfajores(p.value)}</td>
+      </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function populatePlayerSelects() {
+  const sel = document.getElementById('rating-player');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Elegir jugador —</option>';
+  const sorted = [...state.players].sort((a, b) => a.name.localeCompare(b.name));
+  sorted.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${p.name} (${p.team}) · ${formatCoins(p.value)}`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+// ── BONUS HINT ─────────────────────────────────────────────────────────────
+function updateBonusHint(torneo) {
+  const hint  = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
+  if (!hint) return;
+  const count = state[torneo].length;
+  const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
+  hint.textContent = count === total - 1 ? '¡Próximo partido define +1 Punto Bonus al puntero!'
+                   : count === total     ? 'Torneo finalizado (Bonus ya inyectado)'
+                   :                       'No aplica (se activa en la última fecha)';
+}
+
+// ── FLASH ──────────────────────────────────────────────────────────────────
+function triggerFlash(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('flash-updated'); setTimeout(() => el.classList.remove('flash-updated'), 1500); }
+}
+
+// ── SELECTS ────────────────────────────────────────────────────────────────
+function populateSelects() {
+  ['ap-home','ap-away','cl-home','cl-away','copa-home','copa-away','gol-team','disc-team','player-team'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    TEAMS.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      sel.appendChild(opt);
     });
-    grid.innerHTML = html;
-  }
+  });
+  if (document.getElementById('ap-away'))   document.getElementById('ap-away').selectedIndex   = 1;
+  if (document.getElementById('cl-away'))   document.getElementById('cl-away').selectedIndex   = 1;
+  if (document.getElementById('copa-away')) document.getElementById('copa-away').selectedIndex = 1;
+}
 
-  window.selectFixture = function(torneo, idx) {
-    if (!isCommissioner) { showToast('🔒 Debes ingresar como Comisionado'); return; }
-    const fix = torneo === 'apertura' ? FIXTURE_APERTURA[idx] : FIXTURE_CLAUSURA[idx];
-    if (torneo === 'apertura') {
-      document.getElementById('ap-home').value  = fix.home;
-      document.getElementById('ap-away').value  = fix.away;
-      document.getElementById('ap-fecha').value = fix.fecha;
-      document.getElementById('ap-ghome').focus();
-    } else {
-      document.getElementById('cl-home').value  = fix.home;
-      document.getElementById('cl-away').value  = fix.away;
-      document.getElementById('cl-fecha').value = fix.fecha;
-      document.getElementById('cl-ghome').focus();
-    }
-    showToast(`✓ Cargado: ${fix.home} vs ${fix.away}`);
-    updateBonusHint(torneo);
-  };
+// ── TABS ───────────────────────────────────────────────────────────────────
+function showTab(tabName, btnEl) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+}
 
-  // ── PARTIDOS ───────────────────────────────────────────────────────────────
-  async function addMatch(torneo) {
-    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
-    const pfx   = torneo === 'apertura' ? 'ap' : 'cl';
-    const home  = document.getElementById(`${pfx}-home`).value;
-    const away  = document.getElementById(`${pfx}-away`).value;
-    const ghome = parseInt(document.getElementById(`${pfx}-ghome`).value) || 0;
-    const gaway = parseInt(document.getElementById(`${pfx}-gaway`).value) || 0;
-    let fecha   = document.getElementById(`${pfx}-fecha`).value.trim();
+// ── EXPONER AL DOM ─────────────────────────────────────────────────────────
+window.showTab        = showTab;
+window.removeMatch    = removeMatch;
+window.removeCopa     = removeCopa;
+window.removeGol      = removeGol;
+window.removeTarjeta  = removeTarjeta;
+window.tryUnlock      = tryUnlock;
+window.enterSpectator = enterSpectator;
+window.promptLogin    = promptLogin;
 
-    if (home === away) { showToast('❌ Un equipo no puede jugar contra sí mismo'); return; }
-    if (!fecha) fecha = "Manual";
+// ── EVENT LISTENERS ────────────────────────────────────────────────────────
+document.getElementById('btn-tab-apertura').addEventListener('click',  e => showTab('apertura',  e.target));
+document.getElementById('btn-tab-clausura').addEventListener('click',  e => showTab('clausura',  e.target));
+document.getElementById('btn-tab-anual').addEventListener('click',     e => showTab('anual',     e.target));
+document.getElementById('btn-tab-copas').addEventListener('click',     e => showTab('copas',     e.target));
+document.getElementById('btn-tab-pichichi').addEventListener('click',  e => showTab('pichichi',  e.target));
+document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
+document.getElementById('btn-tab-mercado').addEventListener('click',   e => showTab('mercado',   e.target));
 
-    const dupIdx = state[torneo].findIndex(m => m.fecha === fecha && m.home === home && m.away === away);
-    if (dupIdx !== -1) {
-      state[torneo][dupIdx] = { ...state[torneo][dupIdx], ghome, gaway };
-      showToast('✓ Partido actualizado');
-    } else {
-      state[torneo].push({ id: Date.now() + Math.random(), fecha, home, away, ghome, gaway });
-      showToast('✓ Partido guardado');
-    }
+document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
+document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));
+document.getElementById('btn-add-clausura').addEventListener('click', () => addMatch('clausura'));
+document.getElementById('btn-add-copa').addEventListener('click',     addCopasMatch);
+document.getElementById('btn-add-gol').addEventListener('click',      addGol);
+document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
+document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
+document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
+document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });
 
-    await saveKey(torneo);
-    triggerFlash(torneo === 'apertura' ? 'table-apertura' : 'table-clausura');
-    document.getElementById(`${pfx}-ghome`).value = 0;
-    document.getElementById(`${pfx}-gaway`).value = 0;
-  }
+// Mercado
+document.getElementById('btn-add-player').addEventListener('click', addPlayer);
+document.getElementById('btn-add-rating').addEventListener('click', addRating);
 
-  async function removeMatch(torneo, id) {
-    if (!isCommissioner) return;
-    state[torneo] = state[torneo].filter(m => m.id !== id);
-    await saveKey(torneo);
-    showToast('✓ Partido eliminado');
-  }
-
-  function renderMatchesList(torneo, containerId) {
-    const container = document.getElementById(containerId);
-    if (state[torneo].length === 0) {
-      container.innerHTML = '<div class="empty-state">No hay partidos cargados</div>';
-      return;
-    }
-    let html = '';
-    state[torneo].forEach(m => {
-      html += `
-        <div class="match-item">
-          <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
-          <div class="score-display">${m.ghome} — ${m.gaway}</div>
-          <div class="round-label">${m.fecha}</div>
-          <button class="btn-danger" onclick="window.removeMatch('${torneo}', ${m.id})">Borrar</button>
-        </div>`;
-    });
-    container.innerHTML = html;
-  }
-
-  // ── COPAS ──────────────────────────────────────────────────────────────────
-  async function addCopasMatch() {
-    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede cargar partidos'); return; }
-    const torneo = document.getElementById('copa-torneo').value;
-    const home   = document.getElementById('copa-home').value;
-    const away   = document.getElementById('copa-away').value;
-    const ghome  = parseInt(document.getElementById('copa-ghome').value) || 0;
-    const gaway  = parseInt(document.getElementById('copa-gaway').value) || 0;
-    const nota   = document.getElementById('copa-nota').value.trim();
-
-    if (home === away) { showToast('❌ Cruce inválido'); return; }
-
-    state.copas.push({ id: Date.now(), torneo, home, away, ghome, gaway, nota });
-    await saveKey('copas');
-    showToast('✓ Copa Actualizada');
-  }
-
-  async function removeCopa(id) {
-    if (!isCommissioner) return;
-    state.copas = state.copas.filter(c => c.id !== id);
-    await saveKey('copas');
-    showToast('✓ Registro eliminado');
-  }
-
-  function renderMatchesCopas() {
-    const container = document.getElementById('matches-copas');
-    if (state.copas.length === 0) {
-      container.innerHTML = '<div class="empty-state">No hay cruces de copa cargados</div>';
-      return;
-    }
-    let html = '';
-    state.copas.forEach(c => {
-      html += `
-        <div class="match-item" style="border-left: 3px solid var(--azul);">
-          <div class="teams">
-            <span style="font-size:11px;display:block;color:var(--azul);width:100%;font-weight:700;">${c.torneo}</span>
-            <strong>${c.home}</strong> vs <strong>${c.away}</strong>
-            ${c.nota ? `<span style="color:#666;font-size:12px;">(${c.nota})</span>` : ''}
-          </div>
-          <div class="score-display" style="color:var(--azul);">${c.ghome} — ${c.gaway}</div>
-          <button class="btn-danger" onclick="window.removeCopa(${c.id})">Borrar</button>
-        </div>`;
-    });
-    container.innerHTML = html;
-  }
-
-  // ── GOLEADORES ─────────────────────────────────────────────────────────────
-  async function addGol() {
-    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar goles'); return; }
-    const team     = document.getElementById('gol-team').value;
-    const jugador  = document.getElementById('gol-jugador').value.trim();
-    const cantidad = parseInt(document.getElementById('gol-cantidad').value) || 1;
-
-    if (!jugador) { showToast('❌ Nombre del goleador requerido'); return; }
-
-    const match = state.goles.find(g => g.team === team && g.jugador.toLowerCase() === jugador.toLowerCase());
-    if (match) {
-      match.goles += cantidad;
-    } else {
-      state.goles.push({ id: Date.now(), team, jugador, goles: cantidad });
-    }
-
-    await saveKey('goles');
-    document.getElementById('gol-jugador').value  = '';
-    document.getElementById('gol-cantidad').value = 1;
-    showToast('✓ Gol anotado');
-  }
-
-  async function removeGol(id) {
-    if (!isCommissioner) return;
-    state.goles = state.goles.filter(g => g.id !== id);
-    await saveKey('goles');
-    showToast('✓ Registro eliminado');
-  }
-
-  function renderPichichi() {
-    const table = document.getElementById('table-pichichi');
-    const arr   = [...state.goles].sort((a,b) => b.goles - a.goles);
-    if (arr.length === 0) {
-      table.innerHTML = '<tr><td class="empty-state">No hay goles registrados</td></tr>';
-      return;
-    }
-    const maxGoles = arr[0].goles || 1;
-    let html = '';
-    arr.forEach((g, idx) => {
-      const pct = (g.goles / maxGoles) * 100;
-      html += `
-        <tr>
-          <td>#${idx+1}</td>
-          <td>
-            <div style="font-weight:600;font-size:16px;">${g.jugador}</div>
-            <div class="bar-wrap">
-              <span style="color:#666;font-size:12px;min-width:80px;">${g.team}</span>
-              <div class="bar" style="width:${pct}%;min-width:4px;"></div>
-            </div>
-          </td>
-          <td style="width:120px;text-align:right;">
-            <span>${g.goles} ${g.goles === 1 ? 'Gol' : 'Goles'}</span>
-            <button class="btn-danger" style="margin-left:8px;" onclick="window.removeGol(${g.id})">X</button>
-          </td>
-        </tr>`;
-    });
-    table.innerHTML = html;
-  }
-
-  // ── DISCIPLINA ─────────────────────────────────────────────────────────────
-  async function addTarjeta() {
-    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar tarjetas'); return; }
-    const team    = document.getElementById('disc-team').value;
-    const jugador = document.getElementById('disc-jugador').value.trim();
-    const tipo    = document.getElementById('disc-tipo').value;
-
-    if (!jugador) { showToast('❌ Nombre del jugador requerido'); return; }
-
-    state.tarjetas.push({ id: Date.now(), team, jugador, tipo });
-    await saveKey('tarjetas');
-    document.getElementById('disc-jugador').value = '';
-    showToast('✓ Tarjeta Registrada');
-  }
-
-  async function removeTarjeta(id) {
-    if (!isCommissioner) return;
-    state.tarjetas = state.tarjetas.filter(t => t.id !== id);
-    await saveKey('tarjetas');
-    showToast('✓ Tarjeta Removida');
-  }
-
-  function renderDisciplina() {
-    const tbody = document.getElementById('table-disciplina');
-    if (state.tarjetas.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Limpio · Sin amonestaciones</td></tr>';
-      return;
-    }
-    let html = '';
-    state.tarjetas.forEach(t => {
-      const badge = t.tipo === 'AMARILLA'
-        ? '<span class="card-amarilla">🟨 AMARILLA</span>'
-        : '<span class="card-roja">🟥 ROJA DIRECTA</span>';
-      html += `
-        <tr>
-          <td style="font-weight:600;">${t.team}</td>
-          <td>${t.jugador}</td>
-          <td>${badge}</td>
-          <td><button class="btn-danger" onclick="window.removeTarjeta(${t.id})">Quitar</button></td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
-  }
-
-  // ── BONUS HINT ─────────────────────────────────────────────────────────────
-  function updateBonusHint(torneo) {
-    const hint  = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
-    if (!hint) return;
-    const count = state[torneo].length;
-    const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
-    hint.textContent = count === total - 1 ? '¡Próximo partido define +1 Punto Bonus al puntero!'
-                     : count === total     ? 'Torneo finalizado (Bonus ya inyectado)'
-                     :                       'No aplica (se activa en la última fecha)';
-  }
-
-  // ── FLASH ANIMATION ────────────────────────────────────────────────────────
-  function triggerFlash(id) {
-    const el = document.getElementById(id);
-    if (el) { el.classList.add('flash-updated'); setTimeout(() => el.classList.remove('flash-updated'), 1500); }
-  }
-
-  // ── SELECTS ────────────────────────────────────────────────────────────────
-  function populateSelects() {
-    ['ap-home','ap-away','cl-home','cl-away','copa-home','copa-away','gol-team','disc-team'].forEach(id => {
-      const sel = document.getElementById(id);
-      if (!sel) return;
-      sel.innerHTML = '';
-      TEAMS.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t; opt.textContent = t;
-        sel.appendChild(opt);
-      });
-    });
-    if (document.getElementById('ap-away'))   document.getElementById('ap-away').selectedIndex   = 1;
-    if (document.getElementById('cl-away'))   document.getElementById('cl-away').selectedIndex   = 1;
-    if (document.getElementById('copa-away')) document.getElementById('copa-away').selectedIndex = 1;
-  }
-
-  // ── TABS ───────────────────────────────────────────────────────────────────
-  function showTab(tabName, btnEl) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    if (btnEl) btnEl.classList.add('active');
-  }
-
-  // ── EXPONER AL DOM ─────────────────────────────────────────────────────────
-  window.showTab        = showTab;
-  window.removeMatch    = removeMatch;
-  window.removeCopa     = removeCopa;
-  window.removeGol      = removeGol;
-  window.removeTarjeta  = removeTarjeta;
-  window.tryUnlock      = tryUnlock;
-  window.enterSpectator = enterSpectator;
-  window.promptLogin    = promptLogin;
-
-  // ── EVENT LISTENERS ────────────────────────────────────────────────────────
-  document.getElementById('btn-tab-apertura').addEventListener('click',  e => showTab('apertura',  e.target));
-  document.getElementById('btn-tab-clausura').addEventListener('click',  e => showTab('clausura',  e.target));
-  document.getElementById('btn-tab-anual').addEventListener('click',     e => showTab('anual',     e.target));
-  document.getElementById('btn-tab-copas').addEventListener('click',     e => showTab('copas',     e.target));
-  document.getElementById('btn-tab-pichichi').addEventListener('click',  e => showTab('pichichi',  e.target));
-  document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
-
-  document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
-  document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));
-  document.getElementById('btn-add-clausura').addEventListener('click', () => addMatch('clausura'));
-  document.getElementById('btn-add-copa').addEventListener('click',     addCopasMatch);
-  document.getElementById('btn-add-gol').addEventListener('click',      addGol);
-  document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
-  document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
-  document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
-  document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });
-
-  // ── ARRANCAR ───────────────────────────────────────────────────────────────
-  init();
+// ── ARRANCAR ───────────────────────────────────────────────────────────────
+init();

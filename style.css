@@ -639,3 +639,85 @@
     .match-input-row input[type=number] { width: 48px; }
     .copa-match { gap: 6px; }
   }
+
+/* ── MERCADO / JUGADORES ── */
+.currency-legend {
+  background: rgba(0,255,135,.05);
+  border: 1px solid rgba(0,255,135,.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.legend-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--verde);
+  margin-bottom: 10px;
+}
+.legend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #ccc;
+}
+.legend-item strong { color: var(--oro); }
+.legend-emoji { margin-right: 4px; }
+.legend-formula {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+}
+.legend-formula code {
+  background: rgba(0,0,0,.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--verde);
+  font-size: 11px;
+}
+
+.mvt-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+}
+.mvt-label input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--oro);
+  cursor: pointer;
+}
+
+.value-coins {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--oro);
+}
+.value-alfajor {
+  font-size: 12px;
+  color: #888;
+}
+.last-rating {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+}
+.last-rating.high { color: var(--verde); }
+.last-rating.mid  { color: var(--oro); }
+.last-rating.low  { color: var(--rojo); }
+.mvt-badge {
+  background: var(--oro);
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
