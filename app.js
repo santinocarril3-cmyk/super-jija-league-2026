@@ -425,7 +425,8 @@ async function addMatch(torneo) {
     state[torneo][dupIdx] = { ...state[torneo][dupIdx], ghome, gaway };
     showToast('✓ Partido actualizado');
   } else {
-    state[torneo].push({ id: Date.now() + Math.random(), fecha, home, away, ghome, gaway });
+    const matchId = Date.now() + Math.random();
+    state[torneo].push({ id: matchId, fecha, home, away, ghome, gaway, planilla: [] });
     showToast('✓ Partido guardado');
   }
 
@@ -436,6 +437,24 @@ async function addMatch(torneo) {
   let ratingsApplied = 0;
   if (planilla.length > 0) {
     ratingsApplied = await applyPlanillaRatings(planilla);
+
+    // Guardar resumen de la planilla en el partido (para historial)
+    const matchObj = state[torneo].find(m => m.fecha === fecha && m.home === home && m.away === away);
+    if (matchObj) {
+      matchObj.planilla = planilla.map(e => {
+        const p = state.players.find(pl => String(pl.id) === String(e.id));
+        return {
+          playerId: e.id,
+          name: p ? p.name : '?',
+          team: p ? p.team : '?',
+          goles: e.goles,
+          asist: e.asist,
+          vl: e.vl,
+          mvt: e.esMVT
+        };
+      });
+      await saveKey(torneo);
+    }
   }
 
   triggerFlash(torneo === 'apertura' ? 'table-apertura' : 'table-clausura');
@@ -469,9 +488,18 @@ function renderMatchesList(torneo, containerId) {
   }
   let html = '';
   state[torneo].forEach(m => {
+    let planillaInfo = '';
+    if (m.planilla && m.planilla.length > 0) {
+      const scorers = m.planilla.filter(p => p.goles > 0).map(p => `${p.name} ${p.goles}`).join(', ');
+      const mvt = m.planilla.find(p => p.mvt);
+      planillaInfo = '<div style="font-size:11px;color:#888;width:100%;margin-top:2px;">';
+      if (scorers) planillaInfo += '⚽ ' + scorers + ' ';
+      if (mvt) planillaInfo += '⭐ ' + mvt.name;
+      planillaInfo += '</div>';
+    }
     html += `
-      <div class="match-item">
-        <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
+      <div class="match-item" style="flex-wrap:wrap;">
+        <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong>${planillaInfo}</div>
         <div class="score-display">${m.ghome} — ${m.gaway}</div>
         <div class="round-label">${m.fecha}</div>
         <button class="btn-danger" onclick="window.removeMatch('${torneo}', ${m.id})">Borrar</button>
@@ -886,44 +914,56 @@ function renderPlanilla(torneo) {
   body.innerHTML = html;
 }
 
+
 function collectPlanilla(torneo) {
   const body = document.getElementById(`planilla-${torneo}-body`);
-  if (!body) return [];
+  if (!body) {
+    console.warn('No planilla body for', torneo);
+    return [];
+  }
 
   const rows = body.querySelectorAll('.planilla-row[data-player-id]');
   const mvtRadio = body.querySelector(`input[name="mvt-${torneo}"]:checked`);
-  const mvtId = mvtRadio ? mvtRadio.value : null;
+  const mvtId = mvtRadio ? String(mvtRadio.value) : null;
 
   const results = [];
   rows.forEach(row => {
-    const id = row.getAttribute('data-player-id');
-    const goles = parseInt(row.querySelector('.pl-goles')?.value) || 0;
-    const asist = parseInt(row.querySelector('.pl-asist')?.value) || 0;
-    const vlRaw = row.querySelector('.pl-vl')?.value;
-    const vl = vlRaw === '' || vlRaw === null || vlRaw === undefined ? null : parseFloat(vlRaw);
-    const esMVT = String(id) === String(mvtId);
+    const id = String(row.getAttribute('data-player-id'));
+    const golesInput = row.querySelector('.pl-goles');
+    const asistInput = row.querySelector('.pl-asist');
+    const vlInput = row.querySelector('.pl-vl');
 
-    // Solo procesar si tiene valoración o goles/asistencias
+    const goles = parseInt(golesInput?.value, 10) || 0;
+    const asist = parseInt(asistInput?.value, 10) || 0;
+    const vlStr = (vlInput?.value || '').trim();
+    const vl = vlStr === '' ? null : parseFloat(vlStr);
+    const esMVT = (mvtId !== null && id === mvtId);
+
     if (vl !== null || goles > 0 || asist > 0 || esMVT) {
       results.push({ id, goles, asist, vl, esMVT });
     }
   });
+
+  console.log('Planilla recolectada:', results);
   return results;
 }
 
 async function applyPlanillaRatings(entries) {
+  if (!entries || entries.length === 0) return 0;
+
   let changed = 0;
-  const changesLog = [];
+  let golesChanged = false;
+  const log = [];
 
   for (const e of entries) {
     const player = state.players.find(p => String(p.id) === String(e.id));
     if (!player) {
-      console.warn('Jugador no encontrado para id:', e.id);
+      console.warn('No se encontró jugador id=', e.id, 'players=', state.players.map(p => p.id));
       continue;
     }
 
-    // Actualizar cotización si hay VL
-    if (e.vl !== null && e.vl !== undefined && !isNaN(e.vl)) {
+    // Cotización
+    if (e.vl !== null && !isNaN(e.vl)) {
       const delta = Math.round((Number(e.vl) - 6) * 1000);
       const bonus = e.esMVT ? 500 : 0;
       const oldVal = Number(player.value) || 1000;
@@ -932,22 +972,23 @@ async function applyPlanillaRatings(entries) {
       player.lastPuntaje = Number(e.vl);
       player.lastMVT = !!e.esMVT;
       changed++;
-      changesLog.push(`${player.name}: ${oldVal} → ${newVal} (VL ${e.vl})`);
+      log.push(`${player.name}: $${oldVal} → $${newVal} (VL ${e.vl}${e.esMVT ? ' +MVT' : ''})`);
     } else if (e.esMVT) {
       const oldVal = Number(player.value) || 1000;
       player.value = Math.max(1000, oldVal + 500);
       player.lastMVT = true;
       changed++;
-      changesLog.push(`${player.name}: +500 MVT`);
+      log.push(`${player.name}: +$500 MVT`);
     }
 
-    // Sumar goles
+    // Goles → tabla de goleadores
     if (e.goles > 0) {
       const existing = state.goles.find(g =>
-        g.team === player.team && g.jugador.toLowerCase() === player.name.toLowerCase()
+        g.team === player.team &&
+        String(g.jugador).toLowerCase() === String(player.name).toLowerCase()
       );
       if (existing) {
-        existing.goles += e.goles;
+        existing.goles = (Number(existing.goles) || 0) + e.goles;
       } else {
         state.goles.push({
           id: Date.now() + Math.random(),
@@ -956,20 +997,25 @@ async function applyPlanillaRatings(entries) {
           goles: e.goles
         });
       }
+      golesChanged = true;
+      log.push(`${player.name}: +${e.goles} gol(es)`);
     }
   }
 
-  if (changed > 0 || entries.some(x => x.goles > 0)) {
+  // Guardar SIEMPRE si hubo cambios
+  if (changed > 0) {
     await saveKey('players');
-    if (entries.some(x => x.goles > 0)) await saveKey('goles');
+  }
+  if (golesChanged) {
+    await saveKey('goles');
   }
 
-  if (changesLog.length) {
-    console.log('Cotizaciones actualizadas:', changesLog);
+  console.log('Aplicado:', log);
+  if (log.length) {
+    showToast('✓ ' + log.slice(0, 2).join(' · ') + (log.length > 2 ? '...' : ''));
   }
-  return changed;
+  return changed + (golesChanged ? 1 : 0);
 }
-
 
 // ── BONUS HINT ─────────────────────────────────────────────────────────────
 function updateBonusHint(torneo) {
@@ -1063,7 +1109,7 @@ document.getElementById('lock-pwd').addEventListener('keydown', e => { if (e.key
 
 // Mercado
 document.getElementById('btn-add-player').addEventListener('click', addPlayer);
-document.getElementById('btn-add-rating').addEventListener('click', addRating);
+// btn-add-rating removed (planilla replaces it)
 
 // ── ARRANCAR ───────────────────────────────────────────────────────────────
 init();
