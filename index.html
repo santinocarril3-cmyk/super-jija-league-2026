@@ -78,8 +78,14 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
-      <button class="btn-add" id="btn-add-apertura">AGREGAR</button>
+      <button class="btn-add" id="btn-add-apertura">AGREGAR PARTIDO + PLANILLA</button>
     </div>
+
+    <div id="planilla-apertura" class="planilla-section hidden">
+      <div class="match-list-title">Planilla del Partido · Cargar G / A / VL</div>
+      <div id="planilla-apertura-body"></div>
+    </div>
+
   </div>
 
   <div class="match-list">
@@ -119,8 +125,14 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
-      <button class="btn-add" id="btn-add-clausura">AGREGAR</button>
+      <button class="btn-add" id="btn-add-clausura">AGREGAR PARTIDO + PLANILLA</button>
     </div>
+
+    <div id="planilla-clausura" class="planilla-section hidden">
+      <div class="match-list-title">Planilla del Partido · Cargar G / A / VL</div>
+      <div id="planilla-clausura-body"></div>
+    </div>
+
   </div>
 
   <div class="match-list">
@@ -244,7 +256,7 @@
 <!-- ═══════════════ MERCADO (PRUEBA 1.1) ═══════════════ -->
 <div id="tab-mercado" class="tab-content">
   <div class="section-title">🍬 Mercado de Pases</div>
-  <div class="section-sub">Cotización en Jija-Coins · Prueba 1.1</div>
+  <div class="section-sub">Cotización en Jija-Coins · Prueba 2</div>
 
   <!-- Leyenda de moneda -->
   <div class="currency-legend">

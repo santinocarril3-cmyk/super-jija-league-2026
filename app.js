@@ -401,6 +401,7 @@ window.selectFixture = function(torneo, idx) {
   }
   showToast(`✓ Cargado: ${fix.home} vs ${fix.away}`);
   updateBonusHint(torneo);
+  renderPlanilla(torneo);
 };
 
 // ── PARTIDOS ───────────────────────────────────────────────────────────────
@@ -426,9 +427,27 @@ async function addMatch(torneo) {
   }
 
   await saveKey(torneo);
+
+  // Procesar planilla de jugadores (Prueba 2)
+  const planilla = collectPlanilla(torneo);
+  let ratingsApplied = 0;
+  if (planilla.length > 0) {
+    ratingsApplied = await applyPlanillaRatings(planilla);
+  }
+
   triggerFlash(torneo === 'apertura' ? 'table-apertura' : 'table-clausura');
   document.getElementById(`${pfx}-ghome`).value = 0;
   document.getElementById(`${pfx}-gaway`).value = 0;
+
+  // Limpiar y refrescar planilla
+  renderPlanilla(torneo);
+
+  if (ratingsApplied > 0) {
+    showToast(`✓ Partido + ${ratingsApplied} valoraciones aplicadas`);
+    renderMercado();
+    renderPichichi();
+    populatePlayerSelects();
+  }
 }
 
 async function removeMatch(torneo, id) {
@@ -806,6 +825,137 @@ function populatePlayerSelects() {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ── PLANILLA POST-PARTIDO (PRUEBA 2) ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderPlanilla(torneo) {
+  const pfx = torneo === 'apertura' ? 'ap' : 'cl';
+  const home = document.getElementById(`${pfx}-home`)?.value;
+  const away = document.getElementById(`${pfx}-away`)?.value;
+  const section = document.getElementById(`planilla-${torneo}`);
+  const body = document.getElementById(`planilla-${torneo}-body`);
+  if (!section || !body) return;
+
+  if (!home || !away || home === away) {
+    section.classList.add('hidden');
+    body.innerHTML = '';
+    return;
+  }
+
+  section.classList.remove('hidden');
+
+  const homePlayers = state.players.filter(p => p.team === home);
+  const awayPlayers = state.players.filter(p => p.team === away);
+
+  let html = '';
+
+  // Header
+  html += `<div class="planilla-row planilla-header">
+    <div>Jugador</div><div>G</div><div>A</div><div>VL</div><div>MVT</div>
+  </div>`;
+
+  function rowsFor(players, teamLabel) {
+    let h = `<div class="planilla-team-title">${teamLabel}</div>`;
+    if (players.length === 0) {
+      h += `<div class="planilla-empty">No hay jugadores cargados en este equipo. Agregalos en Mercado.</div>`;
+      return h;
+    }
+    players.forEach(p => {
+      h += `<div class="planilla-row" data-player-id="${p.id}">
+        <div>
+          <div class="planilla-player-name">${p.name}</div>
+          ${p.position ? `<div class="planilla-player-pos">${p.position}</div>` : ''}
+        </div>
+        <input type="number" class="pl-goles" min="0" value="0" data-id="${p.id}">
+        <input type="number" class="pl-asist" min="0" value="0" data-id="${p.id}">
+        <input type="number" class="pl-vl" min="0" max="10" step="0.25" placeholder="—" data-id="${p.id}">
+        <input type="radio" name="mvt-${torneo}" class="pl-mvt" value="${p.id}">
+      </div>`;
+    });
+    return h;
+  }
+
+  html += rowsFor(homePlayers, `🏠 ${home}`);
+  html += rowsFor(awayPlayers, `✈️ ${away}`);
+
+  body.innerHTML = html;
+}
+
+function collectPlanilla(torneo) {
+  const body = document.getElementById(`planilla-${torneo}-body`);
+  if (!body) return [];
+
+  const rows = body.querySelectorAll('.planilla-row[data-player-id]');
+  const mvtRadio = body.querySelector(`input[name="mvt-${torneo}"]:checked`);
+  const mvtId = mvtRadio ? mvtRadio.value : null;
+
+  const results = [];
+  rows.forEach(row => {
+    const id = row.getAttribute('data-player-id');
+    const goles = parseInt(row.querySelector('.pl-goles')?.value) || 0;
+    const asist = parseInt(row.querySelector('.pl-asist')?.value) || 0;
+    const vlRaw = row.querySelector('.pl-vl')?.value;
+    const vl = vlRaw === '' || vlRaw === null || vlRaw === undefined ? null : parseFloat(vlRaw);
+    const esMVT = String(id) === String(mvtId);
+
+    // Solo procesar si tiene valoración o goles/asistencias
+    if (vl !== null || goles > 0 || asist > 0 || esMVT) {
+      results.push({ id, goles, asist, vl, esMVT });
+    }
+  });
+  return results;
+}
+
+async function applyPlanillaRatings(entries) {
+  let changed = 0;
+  for (const e of entries) {
+    const player = state.players.find(p => String(p.id) === String(e.id));
+    if (!player) continue;
+
+    // Actualizar cotización solo si hay VL
+    if (e.vl !== null && !isNaN(e.vl)) {
+      const delta = Math.round((e.vl - 6) * 1000);
+      const bonus = e.esMVT ? 500 : 0;
+      const old = player.value;
+      player.value = Math.max(1000, player.value + delta + bonus);
+      player.lastPuntaje = e.vl;
+      player.lastMVT = e.esMVT;
+      changed++;
+    } else if (e.esMVT) {
+      // Solo MVT sin VL → +500
+      player.value = Math.max(1000, player.value + 500);
+      player.lastMVT = true;
+      changed++;
+    }
+
+    // Sumar goles a la tabla de goleadores
+    if (e.goles > 0) {
+      const existing = state.goles.find(g =>
+        g.team === player.team && g.jugador.toLowerCase() === player.name.toLowerCase()
+      );
+      if (existing) {
+        existing.goles += e.goles;
+      } else {
+        state.goles.push({
+          id: Date.now() + Math.random(),
+          team: player.team,
+          jugador: player.name,
+          goles: e.goles
+        });
+      }
+    }
+  }
+
+  if (changed > 0 || entries.some(e => e.goles > 0)) {
+    await saveKey('players');
+    if (entries.some(e => e.goles > 0)) await saveKey('goles');
+  }
+  return changed;
+}
+
+
 // ── BONUS HINT ─────────────────────────────────────────────────────────────
 function updateBonusHint(torneo) {
   const hint = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
@@ -875,6 +1025,16 @@ document.getElementById('btn-tab-mercado').addEventListener('click',   e => show
 document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
 document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));
 document.getElementById('btn-add-clausura').addEventListener('click', () => addMatch('clausura'));
+
+// Planilla: actualizar cuando cambian los equipos
+['ap-home','ap-away'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', () => renderPlanilla('apertura'));
+});
+['cl-home','cl-away'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', () => renderPlanilla('clausura'));
+});
 document.getElementById('btn-add-copa').addEventListener('click',     addCopasMatch);
 document.getElementById('btn-add-gol').addEventListener('click',      addGol);
 document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
