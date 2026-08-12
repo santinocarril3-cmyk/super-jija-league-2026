@@ -251,6 +251,9 @@ function renderAll() {
   renderDisciplina();
   renderMercado();
   populatePlayerSelects();
+  // Mostrar planilla con los equipos actuales (no esperar al change)
+  renderPlanilla('apertura');
+  renderPlanilla('clausura');
 }
 
 // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
@@ -712,13 +715,13 @@ async function addRating() {
   if (!player) { showToast('❌ Jugador no encontrado'); return; }
 
   // ── Cálculo de cotización ──
-  const delta = Math.round((puntaje - 6) * 1000);
+  const delta = Math.round((Number(puntaje) - 6) * 1000);
   const bonus = esMVT ? 500 : 0;
-  const oldValue = player.value;
+  const oldValue = Number(player.value) || 1000;
 
-  player.value = Math.max(1000, player.value + delta + bonus);
-  player.lastPuntaje = puntaje;
-  player.lastMVT = esMVT;
+  player.value = Math.max(1000, oldValue + delta + bonus);
+  player.lastPuntaje = Number(puntaje);
+  player.lastMVT = !!esMVT;
 
   // ── Actualizar tabla de Goleadores si hubo goles ──
   if (goles > 0) {
@@ -910,27 +913,35 @@ function collectPlanilla(torneo) {
 
 async function applyPlanillaRatings(entries) {
   let changed = 0;
+  const changesLog = [];
+
   for (const e of entries) {
     const player = state.players.find(p => String(p.id) === String(e.id));
-    if (!player) continue;
-
-    // Actualizar cotización solo si hay VL
-    if (e.vl !== null && !isNaN(e.vl)) {
-      const delta = Math.round((e.vl - 6) * 1000);
-      const bonus = e.esMVT ? 500 : 0;
-      const old = player.value;
-      player.value = Math.max(1000, player.value + delta + bonus);
-      player.lastPuntaje = e.vl;
-      player.lastMVT = e.esMVT;
-      changed++;
-    } else if (e.esMVT) {
-      // Solo MVT sin VL → +500
-      player.value = Math.max(1000, player.value + 500);
-      player.lastMVT = true;
-      changed++;
+    if (!player) {
+      console.warn('Jugador no encontrado para id:', e.id);
+      continue;
     }
 
-    // Sumar goles a la tabla de goleadores
+    // Actualizar cotización si hay VL
+    if (e.vl !== null && e.vl !== undefined && !isNaN(e.vl)) {
+      const delta = Math.round((Number(e.vl) - 6) * 1000);
+      const bonus = e.esMVT ? 500 : 0;
+      const oldVal = Number(player.value) || 1000;
+      const newVal = Math.max(1000, oldVal + delta + bonus);
+      player.value = newVal;
+      player.lastPuntaje = Number(e.vl);
+      player.lastMVT = !!e.esMVT;
+      changed++;
+      changesLog.push(`${player.name}: ${oldVal} → ${newVal} (VL ${e.vl})`);
+    } else if (e.esMVT) {
+      const oldVal = Number(player.value) || 1000;
+      player.value = Math.max(1000, oldVal + 500);
+      player.lastMVT = true;
+      changed++;
+      changesLog.push(`${player.name}: +500 MVT`);
+    }
+
+    // Sumar goles
     if (e.goles > 0) {
       const existing = state.goles.find(g =>
         g.team === player.team && g.jugador.toLowerCase() === player.name.toLowerCase()
@@ -948,9 +959,13 @@ async function applyPlanillaRatings(entries) {
     }
   }
 
-  if (changed > 0 || entries.some(e => e.goles > 0)) {
+  if (changed > 0 || entries.some(x => x.goles > 0)) {
     await saveKey('players');
-    if (entries.some(e => e.goles > 0)) await saveKey('goles');
+    if (entries.some(x => x.goles > 0)) await saveKey('goles');
+  }
+
+  if (changesLog.length) {
+    console.log('Cotizaciones actualizadas:', changesLog);
   }
   return changed;
 }
@@ -1001,6 +1016,10 @@ function showTab(tabName, btnEl) {
   const tab = document.getElementById(`tab-${tabName}`);
   if (tab) tab.classList.add('active');
   if (btnEl) btnEl.classList.add('active');
+  // Al entrar a Apertura/Clausura, refrescar planilla
+  if (tabName === 'apertura' || tabName === 'clausura') {
+    renderPlanilla(tabName);
+  }
 }
 
 // ── EXPONER AL DOM ─────────────────────────────────────────────────────────
