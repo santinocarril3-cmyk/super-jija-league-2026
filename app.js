@@ -1,6 +1,8 @@
 import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue, get }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   // ── CONFIG FIREBASE ──────────────────────────────────────────────────────
   const firebaseConfig = {
@@ -13,8 +15,13 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     appId:             "1:428893538374:web:2ad3d312c409f6e775e247"
   };
 
+  // Email de la cuenta de Comisionado que creaste en Firebase Auth → Usuarios.
+  // Cambialo por el email real que usaste al crear ese usuario.
+  const santinocarril3@gmail.com = "comisionado@jija.com";
+
   const app      = initializeApp(firebaseConfig);
   const database = getDatabase(app);
+  const auth     = getAuth(app);
 
   // ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
   const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
@@ -62,17 +69,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     setStatus('online');
   }
 
-  // Guarda la contraseña del comisionado en Firebase
-  async function savePassword(hash) {
-    await set(ref(database, 'jija2026/config/comm_pwd'), hash);
-  }
-
-  // Lee la contraseña guardada
-  async function getPassword() {
-    const snap = await get(ref(database, 'jija2026/config/comm_pwd'));
-    return snap.exists() ? snap.val() : null;
-  }
-
   // ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
   // Cada vez que cualquier otro usuario guarda algo, todos ven la actualización
   function subscribeRealtime() {
@@ -91,16 +87,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     });
   }
 
-  // ── HASH simple (mismo algoritmo que la versión original) ────────────────
-  function hashStr(input) {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      hash = (hash << 5) - hash + input.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash.toString();
-  }
-
   // ── STATUS INDICATOR ─────────────────────────────────────────────────────
   function setStatus(s) {
     const el = document.getElementById('firebase-status');
@@ -115,42 +101,32 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     document.getElementById('loading-bar').style.display = 'none';
     populateSelects();
     subscribeRealtime();       // activa listener en tiempo real
-    await checkInitialOverlay();
+
+    // Reacciona a cambios reales de sesión (login/logout, o refresco de página
+    // con sesión ya persistida por Firebase Auth)
+    onAuthStateChanged(auth, (user) => {
+      const isComm = !!user && user.email === COMMISSIONER_EMAIL;
+      setCommissionerMode(isComm);
+    });
+
+    document.getElementById('lock-overlay').classList.remove('hidden');
+    document.getElementById('btn-spectator').classList.remove('hidden');
   }
 
   // ── OVERLAY / LOGIN ───────────────────────────────────────────────────────
-  async function checkInitialOverlay() {
-    const stored = await getPassword();
-    const overlay = document.getElementById('lock-overlay');
-    overlay.classList.remove('hidden');
-
-    if (!stored) {
-      // Primera vez: crear contraseña
-      document.getElementById('lock-title').textContent   = 'Crear Contraseña';
-      document.getElementById('lock-sub').textContent     = 'Definí la clave de Comisionado';
-      document.getElementById('btn-unlock').textContent   = 'ESTABLECER CLAVE';
-      document.getElementById('btn-spectator').classList.add('hidden');
-    } else {
-      document.getElementById('btn-spectator').classList.remove('hidden');
-    }
-  }
-
   async function tryUnlock() {
-    const input = document.getElementById('lock-pwd').value;
-    const err   = document.getElementById('lock-error');
-    const stored = await getPassword();
+    const pwd = document.getElementById('lock-pwd').value;
+    const err = document.getElementById('lock-error');
 
-    if (!stored) {
-      if (input.length < 4) { err.textContent = '❌ Mínimo 4 caracteres'; return; }
-      await savePassword(hashStr(input));
+    if (!pwd) { err.textContent = '❌ Ingresá la contraseña'; return; }
+
+    try {
+      await signInWithEmailAndPassword(auth, COMMISSIONER_EMAIL, pwd);
       document.getElementById('lock-overlay').classList.add('hidden');
-      setCommissionerMode(true);
-      showToast('✓ Contraseña creada. Sos el Comisionado!');
-    } else if (hashStr(input) === stored) {
-      document.getElementById('lock-overlay').classList.add('hidden');
-      setCommissionerMode(true);
+      document.getElementById('lock-pwd').value = '';
       showToast('✓ Bienvenido, Comisionado');
-    } else {
+      // setCommissionerMode se dispara solo vía onAuthStateChanged
+    } catch (e) {
       err.textContent = '❌ Contraseña incorrecta';
       document.getElementById('lock-pwd').value = '';
       document.getElementById('lock-pwd').focus();
@@ -159,22 +135,20 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   function enterSpectator() {
     document.getElementById('lock-overlay').classList.add('hidden');
-    setCommissionerMode(false);
     showToast('👁️ Modo Espectador Activo');
   }
 
   async function promptLogin() {
     if (isCommissioner) {
-      setCommissionerMode(false);
+      await signOut(auth);
       showToast('🔒 Cerraste sesión');
+      // setCommissionerMode(false) se dispara solo vía onAuthStateChanged
     } else {
       document.getElementById('lock-overlay').classList.remove('hidden');
       document.getElementById('lock-error').textContent = '';
       document.getElementById('lock-pwd').value = '';
       document.getElementById('lock-pwd').focus();
-      // Asegurar que el botón espectador esté visible si ya hay contraseña
-      const stored = await getPassword();
-      if (stored) document.getElementById('btn-spectator').classList.remove('hidden');
+      document.getElementById('btn-spectator').classList.remove('hidden');
     }
   }
 
