@@ -17,7 +17,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   // Email de la cuenta de Comisionado que creaste en Firebase Auth → Usuarios.
   // Cambialo por el email real que usaste al crear ese usuario.
-  const COMMISSIONER_EMAIL = "comisionado@jija.com";
+  const COMMISSIONER_EMAIL = "santinocarril3@gmail.com";
 
   const app      = initializeApp(firebaseConfig);
   const database = getDatabase(app);
