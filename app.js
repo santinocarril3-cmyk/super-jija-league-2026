@@ -26,6 +26,41 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
   const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
 
+  // Plantillas (máx. 7 jugadores por equipo, 5 en cancha incl. arquero).
+  // Para agregar/sacar un jugador, editá esta lista directamente.
+  const PLAYERS = {
+    "All Stars": [
+      { nombre: "Lautaro Iansen",   numero: 1,  posicion: "Arquero" },
+      { nombre: "Santino Carril",   numero: 8,  posicion: "Defensor" },
+      { nombre: "Nahuel Coronel",   numero: null, posicion: "Defensor" },
+      { nombre: "Facundo Rodolao",  numero: 67, posicion: "Mediocampista" },
+      { nombre: "Gonzalo Zaldivar", numero: 10, posicion: "Delantero" },
+      { nombre: "Tomás Sequeira",   numero: 7,  posicion: "Delantero" }
+    ],
+    "4to Régimen": [
+      { nombre: "Ian Lisniksuk",   numero: 1,  posicion: "Arquero" },
+      { nombre: "Ulises",         numero: null, posicion: "Defensor" },
+      { nombre: "Lautaro Galgo",   numero: 8,  posicion: "Mediocampista" },
+      { nombre: "Osiris",         numero: 10, posicion: "Mediocampista" },
+      { nombre: "Bautista Bruno",  numero: 4,  posicion: "Mediocampista" },
+      { nombre: "Leron Galli",     numero: 9,  posicion: "Delantero" }
+    ],
+    "Real Envido": [
+      { nombre: "Martín",           numero: 1, posicion: "Arquero" },
+      { nombre: "Pablo",            numero: 4, posicion: "Defensor" },
+      { nombre: "Joaquín \"Porky\"", numero: 6, posicion: "Defensor" },
+      { nombre: "Yair",             numero: 7, posicion: "Mediocampista" },
+      { nombre: "Fran",             numero: 10, posicion: "Mediocampista" },
+      { nombre: "Iván",             numero: 9, posicion: "Delantero" }
+    ],
+    "Dou FC": [
+      { nombre: "Quichu",   numero: 1,  posicion: "Arquero" },
+      { nombre: "Facundo 2", numero: 6, posicion: "Defensor" },
+      { nombre: "Puma",     numero: 14, posicion: "Mediocampista" },
+      { nombre: "Veizaga",  numero: 10, posicion: "Delantero" }
+    ]
+  };
+
   const FIXTURE_APERTURA = [
     { fecha: "Fecha 1", home: "All Stars",   away: "Real Envido" },
     { fecha: "Fecha 1", home: "4to Régimen", away: "Dou FC" },
@@ -100,6 +135,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   async function init() {
     document.getElementById('loading-bar').style.display = 'none';
     populateSelects();
+    renderPlantillas();
     subscribeRealtime();       // activa listener en tiempo real
 
     // Reacciona a cambios reales de sesión (login/logout, o refresco de página
@@ -453,7 +489,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     }
 
     await saveKey('goles');
-    document.getElementById('gol-jugador').value  = '';
     document.getElementById('gol-cantidad').value = 1;
     showToast('✓ Gol anotado');
   }
@@ -506,7 +541,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
     state.tarjetas.push({ id: Date.now(), team, jugador, tipo });
     await saveKey('tarjetas');
-    document.getElementById('disc-jugador').value = '';
     showToast('✓ Tarjeta Registrada');
   }
 
@@ -571,6 +605,57 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     if (document.getElementById('ap-away'))   document.getElementById('ap-away').selectedIndex   = 1;
     if (document.getElementById('cl-away'))   document.getElementById('cl-away').selectedIndex   = 1;
     if (document.getElementById('copa-away')) document.getElementById('copa-away').selectedIndex = 1;
+
+    // Llena los desplegables de jugador según el equipo elegido por defecto
+    populateJugadorSelect('gol-team',  'gol-jugador');
+    populateJugadorSelect('disc-team', 'disc-jugador');
+  }
+
+  // Llena un <select> de jugadores según el equipo actualmente elegido en
+  // otro <select>. Se llama al cargar la página y cada vez que se cambia
+  // de equipo (evento 'change').
+  function populateJugadorSelect(teamSelectId, jugadorSelectId) {
+    const teamSel    = document.getElementById(teamSelectId);
+    const jugadorSel = document.getElementById(jugadorSelectId);
+    if (!teamSel || !jugadorSel) return;
+
+    const equipo    = teamSel.value;
+    const plantilla = PLAYERS[equipo] || [];
+
+    jugadorSel.innerHTML = '';
+    plantilla.forEach(j => {
+      const opt = document.createElement('option');
+      opt.value = j.nombre;
+      opt.textContent = j.numero ? `#${j.numero} ${j.nombre}` : j.nombre;
+      jugadorSel.appendChild(opt);
+    });
+  }
+
+  // ── PLANTILLAS ─────────────────────────────────────────────────────────────
+  function renderPlantillas() {
+    const container = document.getElementById('plantillas-grid');
+    if (!container) return;
+    const ordenPos = { "Arquero": 0, "Defensor": 1, "Mediocampista": 2, "Delantero": 3 };
+
+    let html = '';
+    TEAMS.forEach(team => {
+      const plantilla = [...(PLAYERS[team] || [])]
+        .sort((a, b) => ordenPos[a.posicion] - ordenPos[b.posicion]);
+
+      html += `<div class="plantilla-card">
+        <h3>${team}</h3>
+        <div class="plantilla-list">`;
+      plantilla.forEach(j => {
+        html += `
+          <div class="plantilla-jugador">
+            <span class="plantilla-num">${j.numero ?? '–'}</span>
+            <span class="plantilla-nombre">${j.nombre}</span>
+            <span class="plantilla-pos">${j.posicion}</span>
+          </div>`;
+      });
+      html += `</div></div>`;
+    });
+    container.innerHTML = html;
   }
 
   // ── NOTICIAS (generadas automáticamente a partir de los resultados) ────────
@@ -699,6 +784,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-tab-pichichi').addEventListener('click',  e => showTab('pichichi',  e.target));
   document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
   document.getElementById('btn-tab-noticias').addEventListener('click',  e => showTab('noticias',  e.target));
+  document.getElementById('btn-tab-plantillas').addEventListener('click',e => showTab('plantillas',e.target));
+
+  // Cuando cambia el equipo elegido, actualiza la lista de jugadores de ese equipo
+  document.getElementById('gol-team').addEventListener('change',  () => populateJugadorSelect('gol-team',  'gol-jugador'));
+  document.getElementById('disc-team').addEventListener('change', () => populateJugadorSelect('disc-team', 'disc-jugador'));
 
   document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
   document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));

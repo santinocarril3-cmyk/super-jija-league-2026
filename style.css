@@ -725,3 +725,50 @@
     font-size: 13px;
     color: #888;
   }
+
+  /* ── PLANTILLAS ── */
+  #plantillas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .plantilla-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .plantilla-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--verde);
+    margin-bottom: 12px;
+  }
+  .plantilla-jugador {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+  .plantilla-jugador:last-child { border-bottom: none; }
+  .plantilla-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--gris-borde);
+    color: var(--verde);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .plantilla-nombre { flex: 1; font-weight: 500; }
+  .plantilla-pos {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
