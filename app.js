@@ -17,7 +17,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   // Email de la cuenta de Comisionado que creaste en Firebase Auth → Usuarios.
   // Cambialo por el email real que usaste al crear ese usuario.
-  const COMMISSIONER_EMAIL = "santinocarril3@gmail.com";;
+  const COMMISSIONER_EMAIL = "comisionado@jija.com";
 
   const app      = initializeApp(firebaseConfig);
   const database = getDatabase(app);
@@ -189,6 +189,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     renderMatchesCopas();
     renderPichichi();
     renderDisciplina();
+    renderNoticias();
   }
 
   // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
@@ -572,6 +573,106 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     if (document.getElementById('copa-away')) document.getElementById('copa-away').selectedIndex = 1;
   }
 
+  // ── NOTICIAS (generadas automáticamente a partir de los resultados) ────────
+  // Título de ejemplo esperado: "🔥 4to Régimen goleó a Dou FC por 5-1 en Fecha 3"
+
+  // Paso 1: junta partidos de Apertura, Clausura y Copas en una sola lista
+  // "normalizada" -- o sea, con la misma forma {home, away, ghome, gaway, ...}
+  // aunque vengan de fuentes distintas. Esto evita repetir código 3 veces.
+  function recolectarPartidosJugados() {
+    const apertura = state.apertura.map(m => ({ ...m, competencia: 'Apertura' }));
+    const clausura = state.clausura.map(m => ({ ...m, competencia: 'Clausura' }));
+    const copas    = state.copas.map(c => ({ ...c, competencia: c.torneo, fecha: c.torneo }));
+    return [...apertura, ...clausura, ...copas];
+  }
+
+  // Paso 2: arma el titular según la diferencia de gol. Este if/else es el
+  // corazón de la "redacción" automática de la noticia.
+  function generarTitular(m) {
+    const dif = Math.abs(m.ghome - m.gaway);
+    const [ganador, perdedor, gGanador, gPerdedor] = m.ghome > m.gaway
+      ? [m.home, m.away, m.ghome, m.gaway]
+      : [m.away, m.home, m.gaway, m.ghome];
+
+    if (m.ghome === m.gaway) {
+      return {
+        tipo: 'empate',
+        titular: `🤝 Empate entre ${m.home} y ${m.away}`,
+        sub: `${m.ghome} - ${m.gaway} · ${m.competencia}${m.fecha && m.fecha !== m.competencia ? ' · ' + m.fecha : ''}`
+      };
+    }
+    if (dif >= 3) {
+      return {
+        tipo: 'gol',
+        titular: `🔥 Goleada de ${ganador} ante ${perdedor}`,
+        sub: `${gGanador} - ${gPerdedor} · ${m.competencia}${m.fecha && m.fecha !== m.competencia ? ' · ' + m.fecha : ''}`
+      };
+    }
+    if (dif === 1) {
+      return {
+        tipo: 'normal',
+        titular: `😅 ${ganador} se impuso sobre la hora ante ${perdedor}`,
+        sub: `${gGanador} - ${gPerdedor} · ${m.competencia}${m.fecha && m.fecha !== m.competencia ? ' · ' + m.fecha : ''}`
+      };
+    }
+    return {
+      tipo: 'normal',
+      titular: `⚽ ${ganador} venció a ${perdedor}`,
+      sub: `${gGanador} - ${gPerdedor} · ${m.competencia}${m.fecha && m.fecha !== m.competencia ? ' · ' + m.fecha : ''}`
+    };
+  }
+
+  function renderNoticias() {
+    const feed = document.getElementById('noticias-feed');
+    if (!feed) return;
+
+    const partidos = recolectarPartidosJugados()
+      .sort((a, b) => b.id - a.id)   // más reciente primero (id = timestamp)
+      .slice(0, 10);                  // últimas 10 noticias, no saturar la página
+
+    if (partidos.length === 0 && state.goles.length === 0 && state.tarjetas.length === 0) {
+      feed.innerHTML = '<div class="empty-state">Todavía no hay resultados para generar noticias</div>';
+      return;
+    }
+
+    let html = '';
+
+    // Noticia destacada: goleador puntero (si hay goles cargados)
+    if (state.goles.length > 0) {
+      const puntero = [...state.goles].sort((a, b) => b.goles - a.goles)[0];
+      html += `
+        <div class="noticia-card gol">
+          <span class="noticia-tag">Goleadores</span>
+          <div class="noticia-titular">🥇 ${puntero.jugador} lidera la tabla de goleadores</div>
+          <div class="noticia-sub">${puntero.goles} ${puntero.goles === 1 ? 'gol' : 'goles'} con ${puntero.team}</div>
+        </div>`;
+    }
+
+    // Noticia destacada: última tarjeta roja
+    const ultimaRoja = [...state.tarjetas].filter(t => t.tipo === 'ROJA').sort((a,b) => b.id - a.id)[0];
+    if (ultimaRoja) {
+      html += `
+        <div class="noticia-card tarjeta">
+          <span class="noticia-tag">Disciplina</span>
+          <div class="noticia-titular">🟥 Expulsión para ${ultimaRoja.jugador}</div>
+          <div class="noticia-sub">${ultimaRoja.team} jugará su próximo partido con una baja sensible</div>
+        </div>`;
+    }
+
+    // Recap de los últimos partidos
+    partidos.forEach(m => {
+      const noticia = generarTitular(m);
+      html += `
+        <div class="noticia-card ${noticia.tipo}">
+          <span class="noticia-tag">${m.competencia}</span>
+          <div class="noticia-titular">${noticia.titular}</div>
+          <div class="noticia-sub">${noticia.sub}</div>
+        </div>`;
+    });
+
+    feed.innerHTML = html;
+  }
+
   // ── TABS ───────────────────────────────────────────────────────────────────
   function showTab(tabName, btnEl) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -597,6 +698,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-tab-copas').addEventListener('click',     e => showTab('copas',     e.target));
   document.getElementById('btn-tab-pichichi').addEventListener('click',  e => showTab('pichichi',  e.target));
   document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
+  document.getElementById('btn-tab-noticias').addEventListener('click',  e => showTab('noticias',  e.target));
 
   document.getElementById('btn-toggle-mode').addEventListener('click',  promptLogin);
   document.getElementById('btn-add-apertura').addEventListener('click', () => addMatch('apertura'));
