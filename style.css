@@ -102,7 +102,14 @@
   main { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
 
   .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .tab-content.active {
+    display: block;
+    animation: fade-in .25s ease;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
   /* ── SECTION TITLE ── */
   .section-title {
@@ -197,6 +204,11 @@
     padding: 20px;
     margin-bottom: 24px;
     backdrop-filter: blur(2px);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .match-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 255, 135, 0.25);
   }
   .match-card h3 {
     font-family: 'Barlow Condensed', sans-serif;
@@ -230,6 +242,36 @@
   }
   .match-input-row select:focus,
   .match-input-row input:focus { border-color: var(--verde); }
+
+  /* ── CAMPO INLINE REUTILIZABLE ──
+     Antes este mismo bloque estaba copiado y pegado como "style" inline
+     en 6 selects/inputs distintos (Apertura, Clausura, Copas). Ahora es
+     una sola clase: si mañana querés cambiar el padding o el color,
+     lo cambiás acá una vez y se actualiza en todos lados. */
+  .input-inline {
+    background: var(--negro);
+    border: 1px solid var(--gris-borde);
+    color: var(--blanco);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    outline: none;
+    flex: 1;
+    min-width: 140px;
+    transition: border-color .2s;
+  }
+  .input-inline:focus { border-color: var(--verde); }
+  .input-inline.small { font-size: 14px; font-family: 'Barlow', sans-serif; padding: 9px 12px; }
+  .input-inline.full { width: 100%; }
+
+  .field-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
 
   .match-input-row input[type=number] {
     width: 60px;

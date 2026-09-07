@@ -68,15 +68,15 @@
       <div class="vs-label">VS</div>
       <input type="number" id="ap-gaway" min="0" value="0">
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
-      <select id="ap-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    <div class="field-row">
+      <select id="ap-away" class="input-inline"></select>
     </div>
     <div class="bonus-info-text">
       <span>Estado Bonus:</span>
       <span id="bonus-hint">No aplica</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+    <div class="field-row">
+      <input type="text" id="ap-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" class="input-inline small">
       <button class="btn-add" id="btn-add-apertura">AGREGAR</button>
     </div>
   </div>
@@ -108,15 +108,15 @@
       <div class="vs-label">VS</div>
       <input type="number" id="cl-gaway" min="0" value="0">
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
-      <select id="cl-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:10px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    <div class="field-row">
+      <select id="cl-away" class="input-inline"></select>
     </div>
     <div class="bonus-info-text">
       <span>Estado Bonus:</span>
       <span id="cl-bonus-hint">No aplica</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+    <div class="field-row">
+      <input type="text" id="cl-fecha" placeholder="Fecha / Ronda (ej: Fecha 1)" class="input-inline small">
       <button class="btn-add" id="btn-add-clausura">AGREGAR</button>
     </div>
   </div>
@@ -153,7 +153,7 @@
   <div class="match-card">
     <h3>⚽ Cargar Partido Copa</h3>
     <div style="margin-bottom:10px;">
-      <select id="copa-torneo" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;width:100%;">
+      <select id="copa-torneo" class="input-inline full">
         <option value="Coca Champions · SF1 Ida">Coca Champions — SF1 Ida</option>
         <option value="Coca Champions · SF1 Vuelta">Coca Champions — SF1 Vuelta</option>
         <option value="Coca Champions · SF2 Ida">Coca Champions — SF2 Ida</option>
@@ -169,11 +169,11 @@
       <div class="vs-label">VS</div>
       <input type="number" id="copa-gaway" min="0" value="0">
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-      <select id="copa-away" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:9px 12px;border-radius:3px;outline:none;flex:1;"></select>
+    <div class="field-row">
+      <select id="copa-away" class="input-inline"></select>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <input type="text" id="copa-nota" placeholder="Nota / Penales (Opcional)" style="background:var(--negro);border:1px solid var(--gris-borde);color:var(--blanco);font-family:'Barlow',sans-serif;font-size:14px;padding:9px 12px;border-radius:3px;outline:none;flex:1;min-width:140px;">
+    <div class="field-row">
+      <input type="text" id="copa-nota" placeholder="Nota / Penales (Opcional)" class="input-inline small">
       <button class="btn-add" id="btn-add-copa">AGREGAR COPA</button>
     </div>
   </div>
