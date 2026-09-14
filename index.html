@@ -24,6 +24,30 @@
   </div>
 </div>
 
+<!-- ═══════════════════ FICHA DE PARTIDO ═══════════════════ -->
+<div id="ficha-overlay" class="hidden">
+  <div class="ficha-box">
+    <button class="ficha-close" id="btn-ficha-close">✕</button>
+
+    <div id="ficha-view"></div>
+
+    <div id="ficha-edit" class="ficha-edit-panel">
+      <div class="ficha-edit-title">✏️ Editar ficha del partido</div>
+      <div class="field-row">
+        <input type="text" id="ficha-estadio" class="input-inline small" placeholder="Estadio / Cancha">
+        <input type="text" id="ficha-clima" class="input-inline small" placeholder="Clima (ej: Templado ☀️)">
+      </div>
+      <div class="field-row">
+        <select id="ficha-mvp" class="input-inline small">
+          <option value="">— Sin jugador del partido —</option>
+        </select>
+      </div>
+      <div id="ficha-ratings"></div>
+      <button class="lock-btn" id="btn-ficha-guardar">GUARDAR FICHA</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <div class="logo-wrap">
     <span class="logo-main">⚽ Súper Jija League</span>

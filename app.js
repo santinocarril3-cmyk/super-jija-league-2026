@@ -422,11 +422,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     let html = '';
     state[torneo].forEach(m => {
       html += `
-        <div class="match-item">
+        <div class="match-item" onclick="window.abrirFicha('${torneo}', ${m.id})">
           <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
           <div class="score-display">${m.ghome} — ${m.gaway}</div>
           <div class="round-label">${m.fecha}</div>
-          <button class="btn-danger" onclick="window.removeMatch('${torneo}', ${m.id})">Borrar</button>
+          <button class="btn-danger" onclick="event.stopPropagation(); window.removeMatch('${torneo}', ${m.id})">Borrar</button>
         </div>`;
     });
     container.innerHTML = html;
@@ -465,14 +465,14 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     let html = '';
     state.copas.forEach(c => {
       html += `
-        <div class="match-item" style="border-left: 3px solid var(--azul);">
+        <div class="match-item" style="border-left: 3px solid var(--azul);" onclick="window.abrirFicha('copas', ${c.id})">
           <div class="teams">
             <span style="font-size:11px;display:block;color:var(--azul);width:100%;font-weight:700;">${c.torneo}</span>
             <strong>${c.home}</strong> vs <strong>${c.away}</strong>
             ${c.nota ? `<span style="color:#666;font-size:12px;">(${c.nota})</span>` : ''}
           </div>
           <div class="score-display" style="color:var(--azul);">${c.ghome} — ${c.gaway}</div>
-          <button class="btn-danger" onclick="window.removeCopa(${c.id})">Borrar</button>
+          <button class="btn-danger" onclick="event.stopPropagation(); window.removeCopa(${c.id})">Borrar</button>
         </div>`;
     });
     container.innerHTML = html;
@@ -740,9 +740,9 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // "normalizada" -- o sea, con la misma forma {home, away, ghome, gaway, ...}
   // aunque vengan de fuentes distintas. Esto evita repetir código 3 veces.
   function recolectarPartidosJugados() {
-    const apertura = state.apertura.map(m => ({ ...m, competencia: 'Apertura' }));
-    const clausura = state.clausura.map(m => ({ ...m, competencia: 'Clausura' }));
-    const copas    = state.copas.map(c => ({ ...c, competencia: c.torneo, fecha: c.torneo }));
+    const apertura = state.apertura.map(m => ({ ...m, competencia: 'Apertura', _torneoKey: 'apertura' }));
+    const clausura = state.clausura.map(m => ({ ...m, competencia: 'Clausura', _torneoKey: 'clausura' }));
+    const copas    = state.copas.map(c => ({ ...c, competencia: c.torneo, fecha: c.torneo, _torneoKey: 'copas' }));
     return [...apertura, ...clausura, ...copas];
   }
 
@@ -823,7 +823,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     partidos.forEach(m => {
       const noticia = generarTitular(m);
       html += `
-        <div class="noticia-card ${noticia.tipo}">
+        <div class="noticia-card ${noticia.tipo} clickeable" onclick="window.abrirFicha('${m._torneoKey}', ${m.id})">
           <span class="noticia-tag">${m.competencia}</span>
           <div class="noticia-titular">${noticia.titular}</div>
           <div class="noticia-sub">${noticia.sub}</div>
@@ -831,6 +831,127 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     });
 
     feed.innerHTML = html;
+  }
+
+  // ── FICHA DE PARTIDO ─────────────────────────────────────────────────────
+  // Guarda qué partido está abierto en el modal ({torneo, id}) para poder
+  // volver a buscarlo cada vez que se re-renderiza (ej: después de guardar).
+  let fichaActual = null;
+
+  function abrirFicha(torneo, id) {
+    fichaActual = { torneo, id };
+    renderFicha();
+    document.getElementById('ficha-overlay').classList.remove('hidden');
+  }
+
+  function cerrarFicha() {
+    document.getElementById('ficha-overlay').classList.add('hidden');
+    fichaActual = null;
+  }
+
+  function renderFicha() {
+    if (!fichaActual) return;
+    const { torneo, id } = fichaActual;
+    const m = (state[torneo] || []).find(x => x.id === id);
+    if (!m) { cerrarFicha(); return; } // el partido fue borrado mientras estaba abierto
+
+    const competencia = torneo === 'copas' ? m.torneo
+                       : torneo === 'apertura' ? 'Torneo Apertura' : 'Torneo Clausura';
+    const fechaLabel = torneo === 'copas' ? '' : m.fecha;
+    const valoraciones = m.valoraciones || {};
+
+    // Lista de valoraciones de un equipo, en modo "solo lectura" (vista pública)
+    function listaValoraciones(team) {
+      const plantilla = state.jugadores[team] || [];
+      if (plantilla.length === 0) return '<div class="empty-state" style="padding:6px 0;">Sin plantel cargado</div>';
+      return plantilla.map(j => {
+        const key   = `${team}|${j.nombre}`;
+        const val   = valoraciones[key];
+        const esMvp = m.mvp === key;
+        return `
+          <div class="ficha-jugador-row">
+            <span class="ficha-jugador-nombre">${esMvp ? '⭐ ' : ''}${j.nombre}</span>
+            ${val != null ? `<span class="ficha-rating-badge">${val}</span>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    document.getElementById('ficha-view').innerHTML = `
+      <div class="ficha-competencia">${competencia}</div>
+      <div class="ficha-scoreboard">
+        <div class="ficha-team">${m.home}</div>
+        <div class="ficha-score">${m.ghome} - ${m.gaway}</div>
+        <div class="ficha-team">${m.away}</div>
+      </div>
+      <div class="ficha-meta">
+        ${fechaLabel ? `<span>📅 ${fechaLabel}</span>` : ''}
+        ${m.estadio ? `<span>📍 ${m.estadio}</span>` : ''}
+        ${m.clima   ? `<span>${m.clima}</span>`       : ''}
+      </div>
+      ${m.mvp ? `<div class="ficha-mvp">⭐ Jugador del partido: <strong>${m.mvp.split('|')[1]}</strong> · ${m.mvp.split('|')[0]}</div>` : ''}
+      <div class="ficha-plantillas">
+        <div class="ficha-plantilla-col"><h4>${m.home}</h4>${listaValoraciones(m.home)}</div>
+        <div class="ficha-plantilla-col"><h4>${m.away}</h4>${listaValoraciones(m.away)}</div>
+      </div>
+    `;
+
+    // ── Panel de edición (el CSS lo oculta solo si no sos Comisionado) ──
+    document.getElementById('ficha-estadio').value = m.estadio || '';
+    document.getElementById('ficha-clima').value   = m.clima   || '';
+
+    const mvpSel = document.getElementById('ficha-mvp');
+    mvpSel.innerHTML = '<option value="">— Sin jugador del partido —</option>';
+    [m.home, m.away].forEach(team => {
+      (state.jugadores[team] || []).forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = `${team}|${j.nombre}`;
+        opt.textContent = `${j.nombre} (${team})`;
+        mvpSel.appendChild(opt);
+      });
+    });
+    mvpSel.value = m.mvp || '';
+
+    // Un input numérico (1-10) por cada jugador de los 2 equipos
+    function inputsDeEquipo(team) {
+      const plantilla = state.jugadores[team] || [];
+      if (plantilla.length === 0) return '';
+      let h = `<div class="ficha-rating-team-title">${team}</div>`;
+      plantilla.forEach(j => {
+        const key = `${team}|${j.nombre}`;
+        const val = valoraciones[key] ?? '';
+        h += `
+          <div class="ficha-rating-input-row">
+            <span>${j.nombre}</span>
+            <input type="number" min="1" max="10" step="0.1" class="rating-input input-inline small"
+                   data-team="${team}" data-nombre="${j.nombre.replace(/"/g, '&quot;')}" value="${val}">
+          </div>`;
+      });
+      return h;
+    }
+    document.getElementById('ficha-ratings').innerHTML = inputsDeEquipo(m.home) + inputsDeEquipo(m.away);
+  }
+
+  async function guardarFicha() {
+    if (!isCommissioner || !fichaActual) return;
+    const { torneo, id } = fichaActual;
+    const idx = state[torneo].findIndex(x => x.id === id);
+    if (idx === -1) return;
+
+    const estadio = document.getElementById('ficha-estadio').value.trim();
+    const clima   = document.getElementById('ficha-clima').value.trim();
+    const mvp     = document.getElementById('ficha-mvp').value;
+
+    const valoraciones = {};
+    document.querySelectorAll('#ficha-ratings .rating-input').forEach(inp => {
+      const v = inp.value.trim();
+      if (v === '') return;
+      valoraciones[`${inp.dataset.team}|${inp.dataset.nombre}`] = Number(v);
+    });
+
+    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones };
+    await saveKey(torneo);
+    renderFicha();
+    showToast('✓ Ficha guardada');
   }
 
   // ── TABS ───────────────────────────────────────────────────────────────────
@@ -847,6 +968,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   window.removeCopa     = removeCopa;
   window.removeGol      = removeGol;
   window.removeTarjeta  = removeTarjeta;
+  window.abrirFicha     = abrirFicha;
   window.tryUnlock      = tryUnlock;
   window.enterSpectator = enterSpectator;
   window.promptLogin    = promptLogin;
@@ -872,6 +994,8 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-add-gol').addEventListener('click',      addGol);
   document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
   document.getElementById('btn-add-jugador').addEventListener('click',  agregarJugador);
+  document.getElementById('btn-ficha-close').addEventListener('click',   cerrarFicha);
+  document.getElementById('btn-ficha-guardar').addEventListener('click', guardarFicha);
   document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
   document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
   document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });

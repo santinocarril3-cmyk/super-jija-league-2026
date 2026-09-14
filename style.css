@@ -404,6 +404,7 @@
     font-size: 15px;
     gap: 8px;
     transition: background-color 0.2s ease;
+    cursor: pointer;
   }
   .match-item:hover { background: rgba(35, 20, 60, 0.85); }
   .match-item .teams { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -680,6 +681,8 @@
     .match-input-row { grid-template-columns: 1fr auto auto 1fr; gap: 6px; }
     .match-input-row input[type=number] { width: 48px; }
     .copa-match { gap: 6px; }
+    .ficha-plantillas { grid-template-columns: 1fr; }
+    .ficha-score { font-size: 30px; }
   }
 
   /* ── NOTICIAS ── */
@@ -692,6 +695,7 @@
     margin-bottom: 14px;
     transition: transform .2s ease, border-color .2s ease;
   }
+  .noticia-card.clickeable { cursor: pointer; }
   .noticia-card:hover { transform: translateY(-2px); }
   .noticia-card.gol      { border-left-color: var(--oro); }
   .noticia-card.tarjeta  { border-left-color: var(--rojo); }
@@ -772,3 +776,136 @@
     text-transform: uppercase;
     letter-spacing: 1px;
   }
+
+  /* ── FICHA DE PARTIDO ── */
+  #ficha-overlay {
+    position: fixed; inset: 0; z-index: 600;
+    background: rgba(10,10,10,.94);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 30px 16px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  #ficha-overlay.hidden { display: none; }
+
+  .ficha-box {
+    position: relative;
+    background: var(--gris-medio);
+    border: 1px solid var(--gris-borde);
+    border-top: 3px solid var(--oro);
+    border-radius: 8px;
+    padding: 28px 24px;
+    width: min(560px, 100%);
+  }
+
+  .ficha-close {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none;
+    color: #888; font-size: 20px; cursor: pointer;
+    line-height: 1;
+  }
+  .ficha-close:hover { color: var(--blanco); }
+
+  .ficha-competencia {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--oro);
+    margin-bottom: 10px;
+  }
+  .ficha-scoreboard {
+    display: flex; align-items: center; justify-content: center;
+    gap: 18px;
+    margin-bottom: 10px;
+  }
+  .ficha-team {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    flex: 1;
+    text-align: center;
+  }
+  .ficha-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    color: var(--verde);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  .ficha-meta {
+    display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
+    font-size: 13px; color: #999;
+    margin-bottom: 14px;
+  }
+  .ficha-mvp {
+    text-align: center;
+    background: rgba(255,215,0,.08);
+    border: 1px solid rgba(255,215,0,.25);
+    color: var(--oro);
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 18px;
+  }
+  .ficha-mvp strong { color: var(--blanco); }
+
+  .ficha-plantillas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ficha-plantilla-col h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #999;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+  .ficha-jugador-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 0;
+    font-size: 14px;
+  }
+  .ficha-rating-badge {
+    background: var(--verde);
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    padding: 1px 8px;
+    border-radius: 3px;
+  }
+
+  .ficha-edit-panel {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--gris-borde);
+  }
+  .ficha-edit-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 12px;
+  }
+  .ficha-rating-team-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin: 12px 0 6px;
+  }
+  .ficha-rating-input-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .ficha-rating-input-row input { width: 70px; flex: none; }
+
+  body.spectator-mode .ficha-edit-panel { display: none; }
