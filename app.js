@@ -26,9 +26,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── EQUIPOS Y FIXTURES ───────────────────────────────────────────────────
   const TEAMS = ["All Stars", "Real Envido", "4to Régimen", "Dou FC"];
 
-  // Plantillas (máx. 7 jugadores por equipo, 5 en cancha incl. arquero).
-  // Para agregar/sacar un jugador, editá esta lista directamente.
-  const PLAYERS = {
+  // Plantillas por defecto — se usan UNA sola vez para "sembrar" Firebase la
+  // primera vez que el Comisionado entra y todavía no hay datos guardados.
+  // Una vez migrado, la fuente de verdad pasa a ser Firebase (state.jugadores),
+  // no esta constante.
+  const DEFAULT_PLAYERS_SEED = {
     "All Stars": [
       { nombre: "Lautaro Iansen",   numero: 1,  posicion: "Arquero" },
       { nombre: "Santino Carril",   numero: 8,  posicion: "Defensor" },
@@ -92,7 +94,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   ];
 
   // ── ESTADO LOCAL (espejo del snapshot de Firebase) ───────────────────────
-  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [] };
+  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [], jugadores: {} };
   let isCommissioner = false;
 
   // ── HELPERS FIREBASE ─────────────────────────────────────────────────────
@@ -114,6 +116,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       state.copas     = data.copas     ? Object.values(data.copas)     : [];
       state.goles     = data.goles     ? Object.values(data.goles)     : [];
       state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
+      state.jugadores = data.jugadores || {};
       renderAll();
       setStatus('online');
     }, (error) => {
@@ -135,7 +138,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   async function init() {
     document.getElementById('loading-bar').style.display = 'none';
     populateSelects();
-    renderPlantillas();
     subscribeRealtime();       // activa listener en tiempo real
 
     // Reacciona a cambios reales de sesión (login/logout, o refresco de página
@@ -143,6 +145,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     onAuthStateChanged(auth, (user) => {
       const isComm = !!user && user.email === COMMISSIONER_EMAIL;
       setCommissionerMode(isComm);
+      if (isComm) migrarJugadoresSiHaceFalta();
     });
 
     document.getElementById('lock-overlay').classList.remove('hidden');
@@ -226,6 +229,9 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     renderPichichi();
     renderDisciplina();
     renderNoticias();
+    renderPlantillas();
+    populateJugadorSelect('gol-team',  'gol-jugador');
+    populateJugadorSelect('disc-team', 'disc-jugador');
   }
 
   // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
@@ -592,7 +598,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   // ── SELECTS ────────────────────────────────────────────────────────────────
   function populateSelects() {
-    ['ap-home','ap-away','cl-home','cl-away','copa-home','copa-away','gol-team','disc-team'].forEach(id => {
+    ['ap-home','ap-away','cl-home','cl-away','copa-home','copa-away','gol-team','disc-team','nuevo-jugador-team'].forEach(id => {
       const sel = document.getElementById(id);
       if (!sel) return;
       sel.innerHTML = '';
@@ -613,14 +619,16 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   // Llena un <select> de jugadores según el equipo actualmente elegido en
   // otro <select>. Se llama al cargar la página y cada vez que se cambia
-  // de equipo (evento 'change').
+  // de equipo (evento 'change'), y también cada vez que llega un snapshot
+  // nuevo de Firebase (por si el Comisionado agregó un jugador).
   function populateJugadorSelect(teamSelectId, jugadorSelectId) {
     const teamSel    = document.getElementById(teamSelectId);
     const jugadorSel = document.getElementById(jugadorSelectId);
     if (!teamSel || !jugadorSel) return;
 
     const equipo    = teamSel.value;
-    const plantilla = PLAYERS[equipo] || [];
+    const plantilla = state.jugadores[equipo] || [];
+    const previo    = jugadorSel.value; // intenta conservar la selección actual
 
     jugadorSel.innerHTML = '';
     plantilla.forEach(j => {
@@ -629,9 +637,31 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       opt.textContent = j.numero ? `#${j.numero} ${j.nombre}` : j.nombre;
       jugadorSel.appendChild(opt);
     });
+    if (plantilla.some(j => j.nombre === previo)) jugadorSel.value = previo;
   }
 
-  // ── PLANTILLAS ─────────────────────────────────────────────────────────────
+  // ── PLANTILLAS (guardadas en Firebase: jija2026/jugadores) ─────────────────
+
+  // La primera vez que el Comisionado entra y Firebase todavía no tiene
+  // ningún jugador guardado, copiamos ahí la plantilla de arranque. De ahí
+  // en más, Firebase es la única fuente de verdad — esta semilla no se
+  // vuelve a usar.
+  async function migrarJugadoresSiHaceFalta() {
+    const yaHayDatos = Object.keys(state.jugadores || {}).length > 0;
+    if (yaHayDatos) return;
+
+    const conIds = {};
+    Object.keys(DEFAULT_PLAYERS_SEED).forEach(team => {
+      conIds[team] = DEFAULT_PLAYERS_SEED[team].map((j, i) => ({
+        id: Date.now() + i,
+        ...j
+      }));
+    });
+    state.jugadores = conIds;
+    await saveKey('jugadores');
+    showToast('✓ Plantillas migradas a Firebase');
+  }
+
   function renderPlantillas() {
     const container = document.getElementById('plantillas-grid');
     if (!container) return;
@@ -639,23 +669,68 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
     let html = '';
     TEAMS.forEach(team => {
-      const plantilla = [...(PLAYERS[team] || [])]
+      const plantilla = [...(state.jugadores[team] || [])]
         .sort((a, b) => ordenPos[a.posicion] - ordenPos[b.posicion]);
 
       html += `<div class="plantilla-card">
         <h3>${team}</h3>
         <div class="plantilla-list">`;
+      if (plantilla.length === 0) {
+        html += `<div class="empty-state" style="padding:10px 0;">Sin jugadores cargados</div>`;
+      }
       plantilla.forEach(j => {
         html += `
           <div class="plantilla-jugador">
             <span class="plantilla-num">${j.numero ?? '–'}</span>
             <span class="plantilla-nombre">${j.nombre}</span>
             <span class="plantilla-pos">${j.posicion}</span>
+            <button class="btn-danger btn-del-jugador" data-team="${team}" data-id="${j.id}">✕</button>
           </div>`;
       });
       html += `</div></div>`;
     });
     container.innerHTML = html;
+
+    // Los botones se recrean en cada render, así que hay que reengancharles
+    // el evento cada vez (si no, el click no hace nada).
+    container.querySelectorAll('.btn-del-jugador').forEach(btn => {
+      btn.addEventListener('click', () => eliminarJugador(btn.dataset.team, Number(btn.dataset.id)));
+    });
+  }
+
+  async function agregarJugador() {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede editar plantillas'); return; }
+
+    const team     = document.getElementById('nuevo-jugador-team').value;
+    const nombre   = document.getElementById('nuevo-jugador-nombre').value.trim();
+    const numeroEl = document.getElementById('nuevo-jugador-numero').value;
+    const numero   = numeroEl ? Number(numeroEl) : null;
+    const posicion = document.getElementById('nuevo-jugador-posicion').value;
+
+    if (!nombre) { showToast('❌ Ingresá el nombre del jugador'); return; }
+
+    const plantillaActual = state.jugadores[team] || [];
+    if (plantillaActual.length >= 7) {
+      showToast('❌ Ese equipo ya tiene el máximo de 7 jugadores');
+      return;
+    }
+
+    if (!state.jugadores[team]) state.jugadores[team] = [];
+    state.jugadores[team].push({ id: Date.now(), nombre, numero, posicion });
+
+    await saveKey('jugadores');
+    document.getElementById('nuevo-jugador-nombre').value = '';
+    document.getElementById('nuevo-jugador-numero').value = '';
+    showToast(`✓ ${nombre} agregado a ${team}`);
+  }
+
+  async function eliminarJugador(team, id) {
+    if (!isCommissioner) return;
+    if (!confirm('¿Seguro que querés sacar a este jugador de la plantilla?')) return;
+
+    state.jugadores[team] = (state.jugadores[team] || []).filter(j => j.id !== id);
+    await saveKey('jugadores');
+    showToast('🗑️ Jugador eliminado');
   }
 
   // ── NOTICIAS (generadas automáticamente a partir de los resultados) ────────
@@ -796,6 +871,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-add-copa').addEventListener('click',     addCopasMatch);
   document.getElementById('btn-add-gol').addEventListener('click',      addGol);
   document.getElementById('btn-add-tarjeta').addEventListener('click',  addTarjeta);
+  document.getElementById('btn-add-jugador').addEventListener('click',  agregarJugador);
   document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
   document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
   document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });

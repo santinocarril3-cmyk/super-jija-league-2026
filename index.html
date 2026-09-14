@@ -248,6 +248,23 @@
 <div id="tab-plantillas" class="tab-content">
   <div class="section-title">👥 Plantillas</div>
   <div class="section-sub">Jugadores registrados por equipo</div>
+
+  <div class="match-card">
+    <h3>+ Agregar Jugador</h3>
+    <div class="add-disc-row">
+      <select id="nuevo-jugador-team"></select>
+      <input type="text" id="nuevo-jugador-nombre" placeholder="Nombre del Jugador" maxlength="30">
+      <input type="number" id="nuevo-jugador-numero" placeholder="N°" min="1" max="99" style="width:70px;text-align:center;">
+      <select id="nuevo-jugador-posicion">
+        <option value="Arquero">Arquero</option>
+        <option value="Defensor">Defensor</option>
+        <option value="Mediocampista">Mediocampista</option>
+        <option value="Delantero">Delantero</option>
+      </select>
+      <button class="btn-add" id="btn-add-jugador" style="padding:8px 20px; font-size:15px;">+ AGREGAR</button>
+    </div>
+  </div>
+
   <div id="plantillas-grid"></div>
 </div>
 
