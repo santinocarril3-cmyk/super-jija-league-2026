@@ -154,7 +154,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   // ── OVERLAY / LOGIN ───────────────────────────────────────────────────────
   async function tryUnlock() {
-    const pwd = document.getElementById('lock-pwd').value;
+    const pwd = document.getElementById('lock-pwd').value.trim();
     const err = document.getElementById('lock-error');
 
     if (!pwd) { err.textContent = '❌ Ingresá la contraseña'; return; }
@@ -508,7 +508,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   function renderPichichi() {
     const table = document.getElementById('table-pichichi');
-    const arr   = [...state.goles].sort((a,b) => b.goles - a.goles);
+    const arr   = calcularGoleadores().sort((a,b) => b.goles - a.goles);
     if (arr.length === 0) {
       table.innerHTML = '<tr><td class="empty-state">No hay goles registrados</td></tr>';
       return;
@@ -517,6 +517,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     let html = '';
     arr.forEach((g, idx) => {
       const pct = (g.goles / maxGoles) * 100;
+      // El botón de borrar solo aparece si ese total viene (al menos en parte)
+      // de una carga manual en esta pestaña. Si viene 100% de fichas de
+      // partido, se corrige editando la ficha correspondiente, no acá.
+      const btnBorrar = g.manualId != null
+        ? `<button class="btn-danger" style="margin-left:8px;" onclick="window.removeGol(${g.manualId})">X</button>`
+        : '';
       html += `
         <tr>
           <td>#${idx+1}</td>
@@ -529,7 +535,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
           </td>
           <td style="width:120px;text-align:right;">
             <span>${g.goles} ${g.goles === 1 ? 'Gol' : 'Goles'}</span>
-            <button class="btn-danger" style="margin-left:8px;" onclick="window.removeGol(${g.id})">X</button>
+            ${btnBorrar}
           </td>
         </tr>`;
     });
@@ -790,7 +796,9 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       .sort((a, b) => b.id - a.id)   // más reciente primero (id = timestamp)
       .slice(0, 10);                  // últimas 10 noticias, no saturar la página
 
-    if (partidos.length === 0 && state.goles.length === 0 && state.tarjetas.length === 0) {
+    const goleadores = calcularGoleadores();
+
+    if (partidos.length === 0 && goleadores.length === 0 && state.tarjetas.length === 0) {
       feed.innerHTML = '<div class="empty-state">Todavía no hay resultados para generar noticias</div>';
       return;
     }
@@ -798,8 +806,8 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     let html = '';
 
     // Noticia destacada: goleador puntero (si hay goles cargados)
-    if (state.goles.length > 0) {
-      const puntero = [...state.goles].sort((a, b) => b.goles - a.goles)[0];
+    if (goleadores.length > 0) {
+      const puntero = [...goleadores].sort((a, b) => b.goles - a.goles)[0];
       html += `
         <div class="noticia-card gol">
           <span class="noticia-tag">Goleadores</span>
@@ -858,7 +866,8 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     const competencia = torneo === 'copas' ? m.torneo
                        : torneo === 'apertura' ? 'Torneo Apertura' : 'Torneo Clausura';
     const fechaLabel = torneo === 'copas' ? '' : m.fecha;
-    const valoraciones = m.valoraciones || {};
+    const valoraciones  = m.valoraciones  || {};
+    const golesPartido  = m.golesPartido  || {};
 
     // Lista de valoraciones de un equipo, en modo "solo lectura" (vista pública)
     function listaValoraciones(team) {
@@ -867,11 +876,15 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       return plantilla.map(j => {
         const key   = `${team}|${j.nombre}`;
         const val   = valoraciones[key];
+        const goles = golesPartido[key];
         const esMvp = m.mvp === key;
         return `
           <div class="ficha-jugador-row">
             <span class="ficha-jugador-nombre">${esMvp ? '⭐ ' : ''}${j.nombre}</span>
-            ${val != null ? `<span class="ficha-rating-badge">${val}</span>` : ''}
+            <span>
+              ${goles ? `<span class="ficha-gol-badge">⚽ ${goles}</span>` : ''}
+              ${val != null ? `<span class="ficha-rating-badge">${val}</span>` : ''}
+            </span>
           </div>`;
       }).join('');
     }
@@ -911,19 +924,27 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     });
     mvpSel.value = m.mvp || '';
 
-    // Un input numérico (1-10) por cada jugador de los 2 equipos
+    // Por cada jugador de los 2 equipos: un input de goles y uno de nota (1-10).
+    // Cargar los goles acá los suma solo a la tabla de Goleadores — no hace
+    // falta ir a cargarlos de nuevo a mano en esa pestaña.
     function inputsDeEquipo(team) {
       const plantilla = state.jugadores[team] || [];
       if (plantilla.length === 0) return '';
       let h = `<div class="ficha-rating-team-title">${team}</div>`;
       plantilla.forEach(j => {
-        const key = `${team}|${j.nombre}`;
-        const val = valoraciones[key] ?? '';
+        const key       = `${team}|${j.nombre}`;
+        const val       = valoraciones[key] ?? '';
+        const golesVal  = golesPartido[key] ?? '';
+        const nombreAtr = j.nombre.replace(/"/g, '&quot;');
         h += `
           <div class="ficha-rating-input-row">
             <span>${j.nombre}</span>
-            <input type="number" min="1" max="10" step="0.1" class="rating-input input-inline small"
-                   data-team="${team}" data-nombre="${j.nombre.replace(/"/g, '&quot;')}" value="${val}">
+            <span class="ficha-input-pair">
+              <input type="number" min="0" step="1" class="gol-input input-inline small"
+                     data-team="${team}" data-nombre="${nombreAtr}" value="${golesVal}" title="Goles" placeholder="⚽">
+              <input type="number" min="1" max="10" step="0.1" class="rating-input input-inline small"
+                     data-team="${team}" data-nombre="${nombreAtr}" value="${val}" title="Nota (1-10)" placeholder="Nota">
+            </span>
           </div>`;
       });
       return h;
@@ -948,10 +969,44 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       valoraciones[`${inp.dataset.team}|${inp.dataset.nombre}`] = Number(v);
     });
 
-    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones };
-    await saveKey(torneo);
+    const golesPartido = {};
+    document.querySelectorAll('#ficha-ratings .gol-input').forEach(inp => {
+      const v = Number(inp.value.trim() || 0);
+      if (v <= 0) return; // 0 goles = no hace falta guardarlo
+      golesPartido[`${inp.dataset.team}|${inp.dataset.nombre}`] = v;
+    });
+
+    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones, golesPartido };
+    await saveKey(torneo);       // guarda el partido (con sus goles adentro)
     renderFicha();
-    showToast('✓ Ficha guardada');
+    renderPichichi();            // la tabla de Goleadores se actualiza sola, al toque
+    showToast('✓ Ficha guardada — Goleadores actualizado');
+  }
+
+  // Junta los goles "de siempre" (cargados a mano en la pestaña Goleadores)
+  // con los que ahora se cargan desde la ficha de cada partido, y devuelve
+  // el total combinado por jugador. Así no se pierde nada de lo ya cargado.
+  function calcularGoleadores() {
+    const mapa = {}; // "Equipo|Nombre" -> { team, jugador, goles, manualId }
+
+    state.goles.forEach(g => {
+      mapa[`${g.team}|${g.jugador}`] = { team: g.team, jugador: g.jugador, goles: g.goles, manualId: g.id };
+    });
+
+    ['apertura', 'clausura', 'copas'].forEach(torneo => {
+      (state[torneo] || []).forEach(m => {
+        Object.entries(m.golesPartido || {}).forEach(([key, cantidad]) => {
+          if (!cantidad) return;
+          if (!mapa[key]) {
+            const [team, jugador] = key.split('|');
+            mapa[key] = { team, jugador, goles: 0, manualId: null };
+          }
+          mapa[key].goles += cantidad;
+        });
+      });
+    });
+
+    return Object.values(mapa).filter(g => g.goles > 0);
   }
 
   // ── TABS ───────────────────────────────────────────────────────────────────
