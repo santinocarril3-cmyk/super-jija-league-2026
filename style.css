@@ -15,6 +15,16 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* El fondo de partículas va fijo detrás de todo el contenido.
+     pointer-events:none es clave: sin eso, el canvas "robaría" los
+     clics y no podrías tocar los botones que están arriba. */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
   body {
     background: var(--negro);
     background-image:
