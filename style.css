@@ -240,18 +240,6 @@
   .dg-pos { color: var(--verde); }
   .dg-neg { color: var(--rojo); }
 
-  .bonus-badge {
-    background: var(--oro);
-    color: #000;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 2px;
-    margin-left: 6px;
-    letter-spacing: 1px;
-    vertical-align: middle;
-  }
-
   /* ── CARD CARGAR PARTIDO ── */
   .match-card {
     background: rgba(30, 20, 50, 0.85);
@@ -346,16 +334,6 @@
     color: #444;
     text-align: center;
   }
-
-  .bonus-info-text {
-    font-size: 13px;
-    color: #888;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  #bonus-hint, #cl-bonus-hint { color: var(--oro); font-weight: bold; }
 
   .btn-add {
     background: linear-gradient(135deg, #8a2be2 0%, #4a0e8f 60%, #1a0540 100%);

@@ -81,7 +81,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   const FIXTURE_CLAUSURA = [
     { fecha: "Fecha 1", home: "Real Envido", away: "All Stars" },
     { fecha: "Fecha 1", home: "Dou FC",      away: "4to Régimen" },
-    { fecha: "Fecha 2", home: "Real Envido", away: "Dou FC" },
+    { fecha: "Fecha 2", home: "4to Régimen", away: "Real Envido" },
     { fecha: "Fecha 2", home: "All Stars",   away: "Dou FC" },
     { fecha: "Fecha 3", home: "Real Envido", away: "Dou FC" },
     { fecha: "Fecha 3", home: "All Stars",   away: "4to Régimen" },
@@ -237,7 +237,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── TABLA DE POSICIONES ───────────────────────────────────────────────────
   function calculateTable(torneo) {
     let data = {};
-    TEAMS.forEach(t => { data[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, bonus:0 }; });
+    TEAMS.forEach(t => { data[t] = { p:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0 }; });
 
     state[torneo].forEach(m => {
       if (!data[m.home] || !data[m.away]) return;
@@ -257,18 +257,9 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
     TEAMS.forEach(t => { data[t].dg = data[t].gf - data[t].gc; });
 
-    const totalFechas = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
-    if (state[torneo].length === totalFechas) applyBonus(data);
-
     let arr = Object.keys(data).map(name => ({ name, ...data[name] }));
     arr.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
     return arr;
-  }
-
-  function applyBonus(tableData) {
-    let sorted = Object.keys(tableData).map(n => ({ name: n, ...tableData[n] }));
-    sorted.sort((a,b) => b.p - a.p || b.dg - a.dg || b.gf - a.gf);
-    if (sorted[0].pj > 0) { tableData[sorted[0].name].p += 1; tableData[sorted[0].name].bonus = 1; }
   }
 
   function renderStandings(torneo, tableId) {
@@ -286,7 +277,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       html += `
         <tr class="pos-${i+1}">
           <td><span class="pos-badge">${i+1}</span></td>
-          <td>${t.name} ${t.bonus ? '<span class="bonus-badge">+1 BONUS</span>' : ''}</td>
+          <td>${t.name}</td>
           <td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
           <td>${t.gf}</td><td>${t.gc}</td><td class="${dgClass}">${dgSign}</td>
           <td class="pts-cell">${t.p}</td>
@@ -375,7 +366,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       document.getElementById('cl-ghome').focus();
     }
     showToast(`✓ Cargado: ${fix.home} vs ${fix.away}`);
-    updateBonusHint(torneo);
   };
 
   // ── PARTIDOS ───────────────────────────────────────────────────────────────
@@ -583,17 +573,6 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
         </tr>`;
     });
     tbody.innerHTML = html;
-  }
-
-  // ── BONUS HINT ─────────────────────────────────────────────────────────────
-  function updateBonusHint(torneo) {
-    const hint  = document.getElementById(torneo === 'apertura' ? 'bonus-hint' : 'cl-bonus-hint');
-    if (!hint) return;
-    const count = state[torneo].length;
-    const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
-    hint.textContent = count === total - 1 ? '¡Próximo partido define +1 Punto Bonus al puntero!'
-                     : count === total     ? 'Torneo finalizado (Bonus ya inyectado)'
-                     :                       'No aplica (se activa en la última fecha)';
   }
 
   // ── FLASH ANIMATION ────────────────────────────────────────────────────────
