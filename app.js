@@ -230,6 +230,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     renderDisciplina();
     renderNoticias();
     renderPlantillas();
+    renderPremios();
     populateJugadorSelect('gol-team',  'gol-jugador');
     populateJugadorSelect('disc-team', 'disc-jugador');
   }
@@ -820,6 +821,166 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     feed.innerHTML = html;
   }
 
+  // ── PREMIOS ──────────────────────────────────────────────────────────────
+  // Para ganar un premio individual, un jugador necesita al menos esta
+  // cantidad de partidos con nota cargada — evita que alguien gane con
+  // una sola valoración de 10 en un solo partido.
+  const MIN_PARTIDOS_PREMIO = 2;
+
+  // Devuelve los partidos que corresponden a una "competencia": Apertura y
+  // Clausura son arrays propios; las copas comparten un solo array
+  // (state.copas) pero cada partido guarda de qué copa es en `torneo`
+  // (ej: "Coca Champions · SF1 Ida"), así que filtramos por el prefijo.
+  function partidosDeCompetencia(nombre) {
+    if (nombre === 'Apertura') return state.apertura;
+    if (nombre === 'Clausura') return state.clausura;
+    return state.copas.filter(c => (c.torneo || '').startsWith(nombre));
+  }
+
+  // Promedia las valoraciones de cada jugador a lo largo de una lista de
+  // partidos. Si se pasa filtroPosicion (ej: "Arquero"), solo tiene en
+  // cuenta jugadores de esa posición según la Plantilla.
+  function calcularPromedios(partidos, filtroPosicion) {
+    const acumulado = {}; // "Equipo|Nombre" -> { team, jugador, suma, partidos }
+    partidos.forEach(m => {
+      Object.entries(m.valoraciones || {}).forEach(([key, nota]) => {
+        if (nota == null) return;
+        const [team, nombre] = key.split('|');
+        if (filtroPosicion) {
+          const info = (state.jugadores[team] || []).find(j => j.nombre === nombre);
+          if (!info || info.posicion !== filtroPosicion) return;
+        }
+        if (!acumulado[key]) acumulado[key] = { team, jugador: nombre, suma: 0, partidos: 0 };
+        acumulado[key].suma += nota;
+        acumulado[key].partidos += 1;
+      });
+    });
+    return Object.values(acumulado).map(x => ({ ...x, promedio: x.suma / x.partidos }));
+  }
+
+  // El "mejor" de una lista de partidos: mayor promedio, entre los que
+  // cumplen el mínimo de partidos valorados.
+  function mejorDe(partidos, filtroPosicion) {
+    const lista = calcularPromedios(partidos, filtroPosicion).filter(x => x.partidos >= MIN_PARTIDOS_PREMIO);
+    if (lista.length === 0) return null;
+    return lista.sort((a, b) => b.promedio - a.promedio)[0];
+  }
+
+  // El goleador de una lista de partidos, sumando los goles cargados desde
+  // la ficha de cada uno (golesPartido). Los goles manuales viejos no
+  // entran acá porque no tienen forma de saber a qué competencia pertenecen.
+  function goleadorDe(partidos) {
+    const acumulado = {};
+    partidos.forEach(m => {
+      Object.entries(m.golesPartido || {}).forEach(([key, cantidad]) => {
+        if (!cantidad) return;
+        const [team, nombre] = key.split('|');
+        if (!acumulado[key]) acumulado[key] = { team, jugador: nombre, goles: 0 };
+        acumulado[key].goles += cantidad;
+      });
+    });
+    const lista = Object.values(acumulado);
+    if (lista.length === 0) return null;
+    return lista.sort((a, b) => b.goles - a.goles)[0];
+  }
+
+  // Campeón de Apertura/Clausura: el puntero de la tabla, pero solo una vez
+  // que se jugaron TODAS las fechas programadas (si no, el torneo sigue
+  // en curso y no hay campeón todavía).
+  function campeonLiga(torneo) {
+    const total = torneo === 'apertura' ? FIXTURE_APERTURA.length : FIXTURE_CLAUSURA.length;
+    if (state[torneo].length < total) return null;
+    return calculateTable(torneo)[0]?.name || null;
+  }
+
+  // Campeón de una copa: quien ganó el partido "· FINAL" de esa copa.
+  function campeonCopa(nombreCopa) {
+    const final = state.copas.find(c => c.torneo === `${nombreCopa} · FINAL`);
+    if (!final || final.ghome === final.gaway) return null;
+    return final.ghome > final.gaway ? final.home : final.away;
+  }
+
+  function renderPremios() {
+    const cont = document.getElementById('premios-content');
+    if (!cont) return;
+
+    // ── Vitrina de títulos ──
+    const titulos = [
+      { nombre: 'Apertura',          campeon: campeonLiga('apertura') },
+      { nombre: 'Clausura',          campeon: campeonLiga('clausura') },
+      { nombre: 'Coca Champions',    campeon: campeonCopa('Coca Champions') },
+      { nombre: 'Super Jija Cup',    campeon: campeonCopa('Super Jija Cup') },
+      { nombre: 'Jija RoosterFight', campeon: campeonCopa('Jija RoosterFight') }
+    ];
+    let html = '<div class="premios-titulos">';
+    titulos.forEach(t => {
+      html += `
+        <div class="titulo-card ${t.campeon ? '' : 'pendiente'}">
+          <div class="titulo-trofeo">🏆</div>
+          <div class="titulo-nombre">${t.nombre}</div>
+          <div class="titulo-campeon">${t.campeon || 'Torneo en curso'}</div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // ── Premios individuales por competencia ──
+    html += '<div class="premios-competencias">';
+    ['Apertura', 'Clausura', 'Coca Champions'].forEach(nombre => {
+      const partidos = partidosDeCompetencia(nombre);
+      html += `
+        <div class="premio-competencia-card">
+          <h3>${nombre}</h3>
+          ${filaPremio('🥇 Mejor Jugador', mejorDe(partidos, null),      'promedio')}
+          ${filaPremio('🧤 Mejor Arquero', mejorDe(partidos, 'Arquero'), 'promedio')}
+          ${filaPremio('⚽ Goleador',      goleadorDe(partidos),         'goles')}
+        </div>`;
+    });
+    html += '</div>';
+
+    // ── Premios de la Jija (anuales, suman Apertura + Clausura + Copas) ──
+    const partidosAnuales = [...state.apertura, ...state.clausura, ...state.copas];
+    html += `
+      <div class="premios-jija">
+        <h3>⭐ Premios de la Jija — Temporada 2026</h3>
+        <div class="premios-jija-grid">
+          ${tarjetaJija("Jijero d'Or", 'Mejor jugador del año', mejorDe(partidosAnuales, null),      'promedio')}
+          ${tarjetaJija("Japi d'Or",   'Arquero del año',       mejorDe(partidosAnuales, 'Arquero'), 'promedio')}
+          ${tarjetaJija('Pichichi',    'Goleador del año',      goleadorDe(partidosAnuales),         'goles')}
+        </div>
+      </div>`;
+
+    cont.innerHTML = html;
+  }
+
+  function filaPremio(titulo, ganador, campo) {
+    if (!ganador) {
+      return `<div class="premio-row"><span class="premio-row-titulo">${titulo}</span><span class="premio-row-vacio">Aún sin definir</span></div>`;
+    }
+    const valor = campo === 'promedio'
+      ? ganador.promedio.toFixed(1)
+      : `${ganador.goles} ${ganador.goles === 1 ? 'gol' : 'goles'}`;
+    return `
+      <div class="premio-row">
+        <span class="premio-row-titulo">${titulo}</span>
+        <span class="premio-row-ganador">${ganador.jugador} <small>(${ganador.team})</small></span>
+        <span class="premio-row-valor">${valor}</span>
+      </div>`;
+  }
+
+  function tarjetaJija(nombrePremio, subtitulo, ganador, campo) {
+    const valor = !ganador ? '—'
+      : campo === 'promedio' ? ganador.promedio.toFixed(1)
+      : `${ganador.goles} ${ganador.goles === 1 ? 'gol' : 'goles'}`;
+    const nombreGanador = ganador ? `${ganador.jugador} <small>(${ganador.team})</small>` : 'Aún sin definir';
+    return `
+      <div class="premio-jija-card">
+        <div class="premio-jija-nombre">${nombrePremio}</div>
+        <div class="premio-jija-sub">${subtitulo}</div>
+        <div class="premio-jija-ganador">${nombreGanador}</div>
+        <div class="premio-jija-valor">${valor}</div>
+      </div>`;
+  }
+
   // ── FICHA DE PARTIDO ─────────────────────────────────────────────────────
   // Guarda qué partido está abierto en el modal ({torneo, id}) para poder
   // volver a buscarlo cada vez que se re-renderiza (ej: después de guardar).
@@ -1016,6 +1177,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-tab-disciplina').addEventListener('click',e => showTab('disciplina',e.target));
   document.getElementById('btn-tab-noticias').addEventListener('click',  e => showTab('noticias',  e.target));
   document.getElementById('btn-tab-plantillas').addEventListener('click',e => showTab('plantillas',e.target));
+  document.getElementById('btn-tab-premios').addEventListener('click',   e => showTab('premios',   e.target));
 
   // Cuando cambia el equipo elegido, actualiza la lista de jugadores de ese equipo
   document.getElementById('gol-team').addEventListener('change',  () => populateJugadorSelect('gol-team',  'gol-jugador'));

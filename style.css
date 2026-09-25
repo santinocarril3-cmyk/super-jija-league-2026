@@ -962,3 +962,118 @@
   }
 
   body.spectator-mode .ficha-edit-panel { display: none; }
+
+  /* ── PREMIOS ── */
+  .premios-titulos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .titulo-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    padding: 16px 10px;
+    text-align: center;
+    transition: transform .2s ease;
+  }
+  .titulo-card:hover { transform: translateY(-2px); }
+  .titulo-card.pendiente { border-color: rgba(255, 255, 255, 0.1); opacity: .6; }
+  .titulo-trofeo { font-size: 26px; margin-bottom: 6px; }
+  .titulo-nombre {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .titulo-campeon {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--oro);
+    letter-spacing: 0.5px;
+  }
+  .titulo-card.pendiente .titulo-campeon { color: #666; font-size: 14px; }
+
+  .premios-competencias {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .premio-competencia-card {
+    background: rgba(30, 20, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .premio-competencia-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--verde);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+  .premio-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 7px 0;
+    border-bottom: 1px dashed rgba(255,255,255,.06);
+    font-size: 14px;
+  }
+  .premio-row:last-child { border-bottom: none; }
+  .premio-row-titulo { color: #999; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; flex-basis: 100%; }
+  .premio-row-ganador { font-weight: 600; }
+  .premio-row-ganador small { color: #777; font-weight: 400; }
+  .premio-row-valor { color: var(--oro); font-family: 'Bebas Neue', sans-serif; font-size: 15px; margin-left: auto; }
+  .premio-row-vacio { color: #555; font-size: 13px; font-style: italic; }
+
+  .premios-jija {
+    background: linear-gradient(135deg, rgba(255,215,0,.07), rgba(30,20,50,.85));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .premios-jija h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--oro);
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .premios-jija-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .premio-jija-card {
+    background: rgba(10, 10, 10, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .premio-jija-nombre {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 19px;
+    color: var(--oro);
+    letter-spacing: 1px;
+  }
+  .premio-jija-sub {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .premio-jija-ganador { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .premio-jija-ganador small { color: #888; font-weight: 400; }
+  .premio-jija-valor { font-family: 'Bebas Neue', sans-serif; color: var(--verde); font-size: 16px; }
