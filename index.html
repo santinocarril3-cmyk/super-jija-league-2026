@@ -26,6 +26,26 @@
   </div>
 </div>
 
+<!-- ═══════════════════ EDITOR MANUAL DE PREMIOS ═══════════════════ -->
+<div id="premio-edit-overlay" class="hidden">
+  <div class="premio-edit-box">
+    <button class="ficha-close" id="premio-edit-close">✕</button>
+    <div class="ficha-edit-title" id="premio-edit-title"></div>
+    <div class="field-row">
+      <select id="premio-edit-team" class="input-inline small"></select>
+    </div>
+    <div class="field-row">
+      <select id="premio-edit-jugador" class="input-inline small"></select>
+    </div>
+    <div class="field-row">
+      <span id="premio-edit-label" class="premio-edit-label">Nota (1-10)</span>
+      <input type="number" id="premio-edit-valor" class="input-inline small" min="0" step="0.1" style="max-width:100px;">
+    </div>
+    <button class="lock-btn" id="premio-edit-guardar">GUARDAR</button>
+    <button class="lock-skip" id="premio-edit-quitar">Volver al cálculo automático</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ FICHA DE PARTIDO ═══════════════════ -->
 <div id="ficha-overlay" class="hidden">
   <div class="ficha-box">
@@ -283,6 +303,7 @@
 <div id="tab-plantillas" class="tab-content">
   <div class="section-title">👥 Plantillas</div>
   <div class="section-sub">Jugadores registrados por equipo</div>
+  <div class="hint-comisionado">↔️ Para transferir un jugador, agarralo de la manija ⠿ y soltalo sobre el otro equipo.</div>
 
   <div class="match-card">
     <h3>+ Agregar Jugador</h3>

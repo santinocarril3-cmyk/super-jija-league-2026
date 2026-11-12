@@ -94,7 +94,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   ];
 
   // ── ESTADO LOCAL (espejo del snapshot de Firebase) ───────────────────────
-  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [], jugadores: {} };
+  let state = { apertura: [], clausura: [], copas: [], goles: [], tarjetas: [], jugadores: {}, premiosManual: {} };
   let isCommissioner = false;
 
   // ── HELPERS FIREBASE ─────────────────────────────────────────────────────
@@ -104,6 +104,180 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     setStatus('syncing');
     await set(ref(database, `jija2026/${key}`), state[key]);
     setStatus('online');
+  }
+
+  // ── IDENTIDAD DE JUGADORES (por ID, no por nombre) ───────────────────────
+  // Cada jugador tiene un id único que NO cambia aunque lo transfieras de
+  // equipo. Las notas, goles y MVP de cada partido se guardan con la clave
+  // "p<id>" (ej: "p1789414299591"). Así no se confunden dos jugadores con el
+  // mismo nombre, y una transferencia no parte a un jugador en dos.
+  //
+  // Los datos viejos usaban "Equipo|Nombre". Siguen leyéndose bien (se
+  // traducen a id al vuelo) y además se convierten una vez en Firebase.
+  const ORDEN_POS = { "Arquero": 0, "Defensor": 1, "Mediocampista": 2, "Delantero": 3 };
+  const claveJ    = id => `p${id}`;
+  const esClaveId = k  => /^p\d+$/.test(String(k));
+  const norm      = t  => String(t ?? '').trim().toLowerCase();
+
+  function todosLosJugadores() {
+    const out = [];
+    Object.keys(state.jugadores || {}).forEach(team => {
+      (state.jugadores[team] || []).forEach(j => out.push({ ...j, team }));
+    });
+    return out;
+  }
+
+  function jugadorPorId(id) {
+    return todosLosJugadores().find(j => j.id === Number(id)) || null;
+  }
+
+  // Acepta la clave nueva ("p123") o la vieja ("Equipo|Nombre").
+  // Devuelve el jugador (con su equipo ACTUAL) o null si no existe más.
+  function resolverClave(key) {
+    if (esClaveId(key)) return jugadorPorId(String(key).slice(1));
+    const [team, nombre] = String(key).split('|');
+    const enEquipo = (state.jugadores[team] || []).find(j => norm(j.nombre) === norm(nombre));
+    if (enEquipo) return { ...enEquipo, team };
+    const mismos = todosLosJugadores().filter(j => norm(j.nombre) === norm(nombre));
+    return mismos.length === 1 ? mismos[0] : null; // si hay 2 homónimos no adivinamos
+  }
+
+  // Para registros sueltos (goles manuales, tarjetas) que guardan playerId
+  // y, de respaldo, el nombre/equipo con que se cargaron.
+  function datosJugadorRegistro(r) {
+    const j = r.playerId != null ? jugadorPorId(r.playerId) : resolverClave(`${r.team}|${r.jugador}`);
+    return j ? { nombre: j.nombre, team: j.team } : { nombre: r.jugador, team: r.team };
+  }
+
+  // Devuelve las notas/goles/MVP de un partido ya traducidos a ids, junto
+  // con "equipos": el equipo por el que jugó cada uno EN ESE PARTIDO (para
+  // que la ficha vieja siga mostrándolo en su equipo de entonces).
+  // `cambio` es true si hubo claves viejas que traducir.
+  function normalizarFicha(m) {
+    let cambio = false;
+    const equipos = { ...(m.equipos || {}) };
+
+    function convertir(mapa) {
+      const nuevo = {};
+      Object.entries(mapa || {}).forEach(([key, valor]) => {
+        if (esClaveId(key)) { nuevo[key] = valor; return; }
+        const j = resolverClave(key);
+        if (!j) { nuevo[key] = valor; return; }       // no identificable: se deja tal cual
+        const nk = claveJ(j.id);
+        nuevo[nk] = valor;
+        if (!equipos[nk]) equipos[nk] = String(key).split('|')[0];
+        cambio = true;
+      });
+      return nuevo;
+    }
+
+    const valoraciones = convertir(m.valoraciones);
+    const golesPartido = convertir(m.golesPartido);
+
+    let mvp = m.mvp || '';
+    if (mvp && !esClaveId(mvp)) {
+      const j = resolverClave(mvp);
+      if (j) {
+        const nk = claveJ(j.id);
+        if (!equipos[nk]) equipos[nk] = mvp.split('|')[0];
+        mvp = nk;
+        cambio = true;
+      }
+    }
+    return { cambio, valoraciones, golesPartido, mvp, equipos };
+  }
+
+  // Jugadores de un lado del partido: los que ya tienen datos cargados con
+  // ese equipo + los de la plantilla actual que todavía no figuran en
+  // ninguno de los dos lados.
+  function jugadoresDelLado(f, team) {
+    const out = [];
+    const vistos = new Set();
+    Object.entries(f.equipos).forEach(([k, t]) => {
+      vistos.add(k);
+      if (t !== team) return;
+      const j = jugadorPorId(k.slice(1));
+      if (j) out.push({ ...j, team });
+    });
+    (state.jugadores[team] || []).forEach(j => {
+      if (!vistos.has(claveJ(j.id))) out.push({ ...j, team });
+    });
+    return out.sort((a, b) =>
+      (ORDEN_POS[a.posicion] ?? 9) - (ORDEN_POS[b.posicion] ?? 9) || a.nombre.localeCompare(b.nombre));
+  }
+
+  // ── TAREAS AUTOMÁTICAS DEL COMISIONADO ───────────────────────────────────
+  // Solo corren cuando (1) ya llegó el primer snapshot de Firebase y (2) el
+  // usuario es Comisionado. Antes de eso, state.jugadores está vacío y
+  // sembrar plantillas por defecto pisaría las reales.
+  let primerSnapshot  = false;
+  let ocupadoMigrando = false;
+
+  async function tareasDeComisionado() {
+    if (!isCommissioner || !primerSnapshot || ocupadoMigrando) return;
+    ocupadoMigrando = true;
+    try {
+      await migrarJugadoresSiHaceFalta();
+      await migrarClavesAIds();
+    } catch (e) {
+      console.error('Error en tareas de comisionado', e);
+    } finally {
+      ocupadoMigrando = false;
+    }
+  }
+
+  // Convierte UNA vez los datos viejos (claves "Equipo|Nombre") a ids.
+  // Calcula todo primero y recién después escribe, para que los snapshots de
+  // Firebase que van llegando en el medio no pisen lo que falta convertir.
+  async function migrarClavesAIds() {
+    if (Object.keys(state.jugadores || {}).length === 0) return;
+    const paraGuardar = {};
+
+    ['apertura', 'clausura', 'copas'].forEach(torneo => {
+      let hubo = false;
+      const nuevo = state[torneo].map(m => {
+        const f = normalizarFicha(m);
+        if (!f.cambio) return m;
+        hubo = true;
+        return { ...m, valoraciones: f.valoraciones, golesPartido: f.golesPartido, mvp: f.mvp, equipos: f.equipos };
+      });
+      if (hubo) paraGuardar[torneo] = nuevo;
+    });
+
+    ['goles', 'tarjetas'].forEach(key => {
+      let hubo = false;
+      const nuevo = state[key].map(r => {
+        if (r.playerId != null) return r;
+        const j = resolverClave(`${r.team}|${r.jugador}`);
+        if (!j) return r;
+        hubo = true;
+        return { ...r, playerId: j.id, team: j.team, jugador: j.nombre };
+      });
+      if (hubo) paraGuardar[key] = nuevo;
+    });
+
+    let huboPremios = false;
+    const premios = JSON.parse(JSON.stringify(state.premiosManual || {}));
+    Object.keys(premios).forEach(comp => {
+      Object.keys(premios[comp] || {}).forEach(slot => {
+        const x = premios[comp][slot];
+        if (!x || x.playerId != null) return;
+        const j = resolverClave(`${x.team}|${x.jugador}`);
+        if (!j) return;
+        premios[comp][slot] = { ...x, playerId: j.id, team: j.team, jugador: j.nombre };
+        huboPremios = true;
+      });
+    });
+    if (huboPremios) paraGuardar.premiosManual = premios;
+
+    const claves = Object.keys(paraGuardar);
+    if (claves.length === 0) return;
+    setStatus('syncing');
+    for (const key of claves) {
+      await set(ref(database, `jija2026/${key}`), paraGuardar[key]);
+    }
+    setStatus('online');
+    showToast('✓ Datos actualizados: los jugadores ahora se identifican por ID');
   }
 
   // ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
@@ -116,9 +290,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       state.copas     = data.copas     ? Object.values(data.copas)     : [];
       state.goles     = data.goles     ? Object.values(data.goles)     : [];
       state.tarjetas  = data.tarjetas  ? Object.values(data.tarjetas)  : [];
-      state.jugadores = data.jugadores || {};
+      state.jugadores     = data.jugadores     || {};
+      state.premiosManual = data.premiosManual || {};
       renderAll();
       setStatus('online');
+      primerSnapshot = true;
+      tareasDeComisionado();
     }, (error) => {
       console.error(error);
       setStatus('offline');
@@ -145,7 +322,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     onAuthStateChanged(auth, (user) => {
       const isComm = !!user && user.email === COMMISSIONER_EMAIL;
       setCommissionerMode(isComm);
-      if (isComm) migrarJugadoresSiHaceFalta();
+      if (isComm) tareasDeComisionado();
     });
 
     document.getElementById('lock-overlay').classList.remove('hidden');
@@ -472,17 +649,24 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── GOLEADORES ─────────────────────────────────────────────────────────────
   async function addGol() {
     if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar goles'); return; }
-    const team     = document.getElementById('gol-team').value;
-    const jugador  = document.getElementById('gol-jugador').value.trim();
+    const playerId = Number(document.getElementById('gol-jugador').value);
     const cantidad = parseInt(document.getElementById('gol-cantidad').value) || 1;
+    const j = jugadorPorId(playerId);
 
-    if (!jugador) { showToast('❌ Nombre del goleador requerido'); return; }
+    if (!j) { showToast('❌ Elegí un jugador de la lista'); return; }
 
-    const match = state.goles.find(g => g.team === team && g.jugador.toLowerCase() === jugador.toLowerCase());
-    if (match) {
-      match.goles += cantidad;
+    // ¿Ya hay un registro manual de este jugador? (nuevo, por id, o viejo, por nombre)
+    const existente =
+      state.goles.find(g => g.playerId === playerId) ||
+      state.goles.find(g => g.playerId == null && resolverClave(`${g.team}|${g.jugador}`)?.id === playerId);
+
+    if (existente) {
+      existente.goles   += cantidad;
+      existente.playerId = playerId;
+      existente.team     = j.team;
+      existente.jugador  = j.nombre;
     } else {
-      state.goles.push({ id: Date.now(), team, jugador, goles: cantidad });
+      state.goles.push({ id: Date.now(), playerId, team: j.team, jugador: j.nombre, goles: cantidad });
     }
 
     await saveKey('goles');
@@ -536,13 +720,13 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── DISCIPLINA ─────────────────────────────────────────────────────────────
   async function addTarjeta() {
     if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar tarjetas'); return; }
-    const team    = document.getElementById('disc-team').value;
-    const jugador = document.getElementById('disc-jugador').value.trim();
-    const tipo    = document.getElementById('disc-tipo').value;
+    const playerId = Number(document.getElementById('disc-jugador').value);
+    const tipo     = document.getElementById('disc-tipo').value;
+    const j = jugadorPorId(playerId);
 
-    if (!jugador) { showToast('❌ Nombre del jugador requerido'); return; }
+    if (!j) { showToast('❌ Elegí un jugador de la lista'); return; }
 
-    state.tarjetas.push({ id: Date.now(), team, jugador, tipo });
+    state.tarjetas.push({ id: Date.now(), playerId, team: j.team, jugador: j.nombre, tipo });
     await saveKey('tarjetas');
     showToast('✓ Tarjeta Registrada');
   }
@@ -562,13 +746,14 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     }
     let html = '';
     state.tarjetas.forEach(t => {
+      const d = datosJugadorRegistro(t);
       const badge = t.tipo === 'AMARILLA'
         ? '<span class="card-amarilla">🟨 AMARILLA</span>'
         : '<span class="card-roja">🟥 ROJA DIRECTA</span>';
       html += `
         <tr>
-          <td style="font-weight:600;">${t.team}</td>
-          <td>${t.jugador}</td>
+          <td style="font-weight:600;">${d.team}</td>
+          <td>${d.nombre}</td>
           <td>${badge}</td>
           <td><button class="btn-danger" onclick="window.removeTarjeta(${t.id})">Quitar</button></td>
         </tr>`;
@@ -619,11 +804,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     jugadorSel.innerHTML = '';
     plantilla.forEach(j => {
       const opt = document.createElement('option');
-      opt.value = j.nombre;
+      opt.value = j.id;
       opt.textContent = j.numero ? `#${j.numero} ${j.nombre}` : j.nombre;
       jugadorSel.appendChild(opt);
     });
-    if (plantilla.some(j => j.nombre === previo)) jugadorSel.value = previo;
+    if (plantilla.some(j => String(j.id) === previo)) jugadorSel.value = previo;
   }
 
   // ── PLANTILLAS (guardadas en Firebase: jija2026/jugadores) ─────────────────
@@ -658,7 +843,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       const plantilla = [...(state.jugadores[team] || [])]
         .sort((a, b) => ordenPos[a.posicion] - ordenPos[b.posicion]);
 
-      html += `<div class="plantilla-card">
+      html += `<div class="plantilla-card" data-team="${team}">
         <h3>${team}</h3>
         <div class="plantilla-list">`;
       if (plantilla.length === 0) {
@@ -667,6 +852,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       plantilla.forEach(j => {
         html += `
           <div class="plantilla-jugador">
+            <span class="plantilla-grip" data-team="${team}" data-id="${j.id}" title="Arrastrar a otro equipo">⠿</span>
             <span class="plantilla-num">${j.numero ?? '–'}</span>
             <span class="plantilla-nombre">${j.nombre}</span>
             <span class="plantilla-pos">${j.posicion}</span>
@@ -682,6 +868,107 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     container.querySelectorAll('.btn-del-jugador').forEach(btn => {
       btn.addEventListener('click', () => eliminarJugador(btn.dataset.team, Number(btn.dataset.id)));
     });
+
+    // Cada manija ⠿ arranca un arrastre cuando se la "agarra" (mouse o dedo)
+    container.querySelectorAll('.plantilla-grip').forEach(grip => {
+      grip.addEventListener('pointerdown', e =>
+        iniciarArrastre(e, grip.dataset.team, Number(grip.dataset.id), grip.closest('.plantilla-jugador')));
+    });
+  }
+
+  // ── ARRASTRAR JUGADORES ENTRE EQUIPOS ──────────────────────────────────────
+  // Usamos "pointer events" (pointerdown / pointermove / pointerup) en vez del
+  // drag & drop nativo de HTML, porque estos eventos funcionan igual con el
+  // mouse y con el dedo en el celular.
+  //
+  // La idea: al agarrar la manija creamos una copia flotante ("fantasma") de
+  // la fila que sigue al puntero. En cada movimiento miramos qué tarjeta de
+  // equipo hay debajo del puntero (elementFromPoint) y la resaltamos. Al
+  // soltar, si hay un equipo distinto al de origen, movemos al jugador.
+  function iniciarArrastre(e, teamOrigen, id, fila) {
+    if (!isCommissioner) return;
+    e.preventDefault();
+
+    const rect  = fila.getBoundingClientRect();
+    const dx    = e.clientX - rect.left;
+    const dy    = e.clientY - rect.top;
+    const ghost = fila.cloneNode(true);
+    ghost.classList.add('plantilla-ghost');
+    ghost.style.width = rect.width + 'px';
+    document.body.appendChild(ghost);
+    document.body.classList.add('dragging-jugador');
+    fila.classList.add('arrastrando');
+
+    function cardBajo(ev) {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY); // el fantasma tiene pointer-events:none
+      return el ? el.closest('.plantilla-card') : null;
+    }
+
+    function mover(ev) {
+      ghost.style.left = (ev.clientX - dx) + 'px';
+      ghost.style.top  = (ev.clientY - dy) + 'px';
+
+      document.querySelectorAll('.plantilla-card.drop-target').forEach(c => c.classList.remove('drop-target'));
+      const card = cardBajo(ev);
+      if (card && card.dataset.team !== teamOrigen) card.classList.add('drop-target');
+
+      // Si el dedo/mouse está cerca del borde, scrolleamos la página
+      if (ev.clientY < 70) window.scrollBy(0, -12);
+      else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+    }
+
+    async function soltar(ev) {
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', soltar);
+      window.removeEventListener('pointercancel', cancelar);
+      const card = cardBajo(ev);
+      limpiar();
+      if (card && card.dataset.team !== teamOrigen) {
+        await moverJugador(teamOrigen, card.dataset.team, id);
+      }
+    }
+
+    function cancelar() {
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', soltar);
+      window.removeEventListener('pointercancel', cancelar);
+      limpiar();
+    }
+
+    function limpiar() {
+      ghost.remove();
+      fila.classList.remove('arrastrando');
+      document.body.classList.remove('dragging-jugador');
+      document.querySelectorAll('.plantilla-card.drop-target').forEach(c => c.classList.remove('drop-target'));
+    }
+
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('pointerup', soltar);
+    window.addEventListener('pointercancel', cancelar);
+    mover(e); // posiciona el fantasma de entrada
+  }
+
+  async function moverJugador(origen, destino, id) {
+    if (!isCommissioner) return;
+    const listaOrigen  = state.jugadores[origen]  || [];
+    const listaDestino = state.jugadores[destino] || [];
+    const jugador = listaOrigen.find(j => j.id === id);
+    if (!jugador) return;
+
+    if (listaDestino.length >= 7) {
+      showToast(`❌ ${destino} ya tiene el máximo de 7 jugadores`);
+      return;
+    }
+
+    state.jugadores[origen]  = listaOrigen.filter(j => j.id !== id);
+    state.jugadores[destino] = [...listaDestino, jugador];
+    renderPlantillas();                 // se ve el cambio al instante
+    await saveKey('jugadores');
+
+    const numeroRepetido = jugador.numero != null && listaDestino.some(j => j.numero === jugador.numero);
+    showToast(numeroRepetido
+      ? `✓ ${jugador.nombre} pasó a ${destino} (ojo: ya hay un #${jugador.numero} ahí)`
+      : `✓ ${jugador.nombre} pasó a ${destino}`);
   }
 
   async function agregarJugador() {
@@ -712,7 +999,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
   async function eliminarJugador(team, id) {
     if (!isCommissioner) return;
-    if (!confirm('¿Seguro que querés sacar a este jugador de la plantilla?')) return;
+    if (!confirm('¿Seguro que querés dar de baja a este jugador? Sus notas y goles en los partidos dejarán de contarse.')) return;
 
     state.jugadores[team] = (state.jugadores[team] || []).filter(j => j.id !== id);
     await saveKey('jugadores');
@@ -799,11 +1086,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     // Noticia destacada: última tarjeta roja
     const ultimaRoja = [...state.tarjetas].filter(t => t.tipo === 'ROJA').sort((a,b) => b.id - a.id)[0];
     if (ultimaRoja) {
+      const dRoja = datosJugadorRegistro(ultimaRoja);
       html += `
         <div class="noticia-card tarjeta">
           <span class="noticia-tag">Disciplina</span>
-          <div class="noticia-titular">🟥 Expulsión para ${ultimaRoja.jugador}</div>
-          <div class="noticia-sub">${ultimaRoja.team} jugará su próximo partido con una baja sensible</div>
+          <div class="noticia-titular">🟥 Expulsión para ${dRoja.nombre}</div>
+          <div class="noticia-sub">${dRoja.team} jugará su próximo partido con una baja sensible</div>
         </div>`;
     }
 
@@ -837,22 +1125,22 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     return state.copas.filter(c => (c.torneo || '').startsWith(nombre));
   }
 
-  // Promedia las valoraciones de cada jugador a lo largo de una lista de
-  // partidos. Si se pasa filtroPosicion (ej: "Arquero"), solo tiene en
-  // cuenta jugadores de esa posición según la Plantilla.
+  // Promedia las valoraciones de cada jugador (identificado por su ID) a lo
+  // largo de una lista de partidos. Si se pasa filtroPosicion (ej:
+  // "Arquero"), solo cuenta jugadores de esa posición según la Plantilla.
   function calcularPromedios(partidos, filtroPosicion) {
-    const acumulado = {}; // "Equipo|Nombre" -> { team, jugador, suma, partidos }
+    const acumulado = {}; // "p<id>" -> { id, team, jugador, suma, partidos }
     partidos.forEach(m => {
-      Object.entries(m.valoraciones || {}).forEach(([key, nota]) => {
+      const f = normalizarFicha(m);
+      Object.entries(f.valoraciones).forEach(([key, nota]) => {
         if (nota == null) return;
-        const [team, nombre] = key.split('|');
-        if (filtroPosicion) {
-          const info = (state.jugadores[team] || []).find(j => j.nombre === nombre);
-          if (!info || info.posicion !== filtroPosicion) return;
-        }
-        if (!acumulado[key]) acumulado[key] = { team, jugador: nombre, suma: 0, partidos: 0 };
-        acumulado[key].suma += nota;
-        acumulado[key].partidos += 1;
+        const j = resolverClave(key);
+        if (!j) return;                                   // jugador borrado: no cuenta
+        if (filtroPosicion && j.posicion !== filtroPosicion) return;
+        const k = claveJ(j.id);
+        if (!acumulado[k]) acumulado[k] = { id: j.id, team: j.team, jugador: j.nombre, suma: 0, partidos: 0 };
+        acumulado[k].suma += nota;
+        acumulado[k].partidos += 1;
       });
     });
     return Object.values(acumulado).map(x => ({ ...x, promedio: x.suma / x.partidos }));
@@ -867,16 +1155,19 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   }
 
   // El goleador de una lista de partidos, sumando los goles cargados desde
-  // la ficha de cada uno (golesPartido). Los goles manuales viejos no
-  // entran acá porque no tienen forma de saber a qué competencia pertenecen.
+  // la ficha de cada uno. Los goles manuales viejos no entran acá porque no
+  // tienen forma de saber a qué competencia pertenecen.
   function goleadorDe(partidos) {
     const acumulado = {};
     partidos.forEach(m => {
-      Object.entries(m.golesPartido || {}).forEach(([key, cantidad]) => {
+      const f = normalizarFicha(m);
+      Object.entries(f.golesPartido).forEach(([key, cantidad]) => {
         if (!cantidad) return;
-        const [team, nombre] = key.split('|');
-        if (!acumulado[key]) acumulado[key] = { team, jugador: nombre, goles: 0 };
-        acumulado[key].goles += cantidad;
+        const j = resolverClave(key);
+        if (!j) return;
+        const k = claveJ(j.id);
+        if (!acumulado[k]) acumulado[k] = { id: j.id, team: j.team, jugador: j.nombre, goles: 0 };
+        acumulado[k].goles += cantidad;
       });
     });
     const lista = Object.values(acumulado);
@@ -924,15 +1215,17 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     html += '</div>';
 
     // ── Premios individuales por competencia ──
+    // Apertura queda afuera de esta lista a propósito: todavía no tiene
+    // partidos con fichas cargadas, así que no tiene sentido mostrarla acá.
     html += '<div class="premios-competencias">';
-    ['Apertura', 'Clausura', 'Coca Champions'].forEach(nombre => {
+    ['Clausura', 'Coca Champions'].forEach(nombre => {
       const partidos = partidosDeCompetencia(nombre);
       html += `
         <div class="premio-competencia-card">
           <h3>${nombre}</h3>
-          ${filaPremio('🥇 Mejor Jugador', mejorDe(partidos, null),      'promedio')}
-          ${filaPremio('🧤 Mejor Arquero', mejorDe(partidos, 'Arquero'), 'promedio')}
-          ${filaPremio('⚽ Goleador',      goleadorDe(partidos),         'goles')}
+          ${filaPremio(nombre, 'jugador',  '🥇 Mejor Jugador', mejorDe(partidos, null),      'promedio')}
+          ${filaPremio(nombre, 'arquero',  '🧤 Mejor Arquero', mejorDe(partidos, 'Arquero'), 'promedio')}
+          ${filaPremio(nombre, 'goleador', '⚽ Goleador',      goleadorDe(partidos),         'goles')}
         </div>`;
     });
     html += '</div>';
@@ -943,42 +1236,147 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       <div class="premios-jija">
         <h3>⭐ Premios de la Jija — Temporada 2026</h3>
         <div class="premios-jija-grid">
-          ${tarjetaJija("Jijero d'Or", 'Mejor jugador del año', mejorDe(partidosAnuales, null),      'promedio')}
-          ${tarjetaJija("Japi d'Or",   'Arquero del año',       mejorDe(partidosAnuales, 'Arquero'), 'promedio')}
-          ${tarjetaJija('Pichichi',    'Goleador del año',      goleadorDe(partidosAnuales),         'goles')}
+          ${tarjetaJija('jugador',  "Jijero d'Or", 'Mejor jugador del año', mejorDe(partidosAnuales, null),      'promedio')}
+          ${tarjetaJija('arquero',  "Japi d'Or",   'Arquero del año',       mejorDe(partidosAnuales, 'Arquero'), 'promedio')}
+          ${tarjetaJija('goleador', 'Pichichi',    'Goleador del año',      goleadorDe(partidosAnuales),         'goles')}
         </div>
       </div>`;
 
     cont.innerHTML = html;
   }
 
-  function filaPremio(titulo, ganador, campo) {
-    if (!ganador) {
-      return `<div class="premio-row"><span class="premio-row-titulo">${titulo}</span><span class="premio-row-vacio">Aún sin definir</span></div>`;
+  // Si el Comisionado cargó un ganador a mano para esta competencia+slot,
+  // ese dato manda por encima del cálculo automático.
+  function ganadorFinal(competencia, slot, ganadorAutomatico) {
+    const manual = (state.premiosManual[competencia] || {})[slot];
+    if (manual) {
+      const j = manual.playerId != null ? jugadorPorId(manual.playerId) : resolverClave(`${manual.team}|${manual.jugador}`);
+      return { ...manual, ...(j ? { jugador: j.nombre, team: j.team } : {}), esManual: true };
     }
-    const valor = campo === 'promedio'
-      ? ganador.promedio.toFixed(1)
-      : `${ganador.goles} ${ganador.goles === 1 ? 'gol' : 'goles'}`;
+    return ganadorAutomatico;
+  }
+
+  function botonEditar(competencia, slot, tipo) {
+    return `<button class="btn-editar-premio" onclick="window.abrirEditorPremio('${competencia}', '${slot}', '${tipo}')">✏️</button>`;
+  }
+
+  function valorTexto(ganador, campo) {
+    if (campo === 'promedio') return Number(ganador.valor ?? ganador.promedio).toFixed(1);
+    const g = ganador.valor ?? ganador.goles;
+    return `${g} ${g === 1 ? 'gol' : 'goles'}`;
+  }
+
+  function filaPremio(competencia, slot, titulo, ganadorAuto, campo) {
+    const ganador = ganadorFinal(competencia, slot, ganadorAuto);
+    const editar  = botonEditar(competencia, slot, campo === 'promedio' ? 'nota' : 'goles');
+
+    if (!ganador) {
+      return `<div class="premio-row"><span class="premio-row-titulo">${titulo}</span><span class="premio-row-vacio">Aún sin definir</span>${editar}</div>`;
+    }
     return `
       <div class="premio-row">
         <span class="premio-row-titulo">${titulo}</span>
-        <span class="premio-row-ganador">${ganador.jugador} <small>(${ganador.team})</small></span>
-        <span class="premio-row-valor">${valor}</span>
+        <span class="premio-row-ganador">${ganador.jugador} <small>(${ganador.team})</small> ${ganador.esManual ? '<span class="tag-manual">manual</span>' : ''}</span>
+        <span class="premio-row-valor">${valorTexto(ganador, campo)}</span>
+        ${editar}
       </div>`;
   }
 
-  function tarjetaJija(nombrePremio, subtitulo, ganador, campo) {
-    const valor = !ganador ? '—'
-      : campo === 'promedio' ? ganador.promedio.toFixed(1)
-      : `${ganador.goles} ${ganador.goles === 1 ? 'gol' : 'goles'}`;
-    const nombreGanador = ganador ? `${ganador.jugador} <small>(${ganador.team})</small>` : 'Aún sin definir';
+  function tarjetaJija(slot, nombrePremio, subtitulo, ganadorAuto, campo) {
+    const ganador = ganadorFinal('Jija', slot, ganadorAuto);
+    const editar  = botonEditar('Jija', slot, campo === 'promedio' ? 'nota' : 'goles');
+    const valor   = ganador ? valorTexto(ganador, campo) : '—';
+    const nombreGanador = ganador
+      ? `${ganador.jugador} <small>(${ganador.team})</small> ${ganador.esManual ? '<span class="tag-manual">manual</span>' : ''}`
+      : 'Aún sin definir';
     return `
       <div class="premio-jija-card">
+        ${editar}
         <div class="premio-jija-nombre">${nombrePremio}</div>
         <div class="premio-jija-sub">${subtitulo}</div>
         <div class="premio-jija-ganador">${nombreGanador}</div>
         <div class="premio-jija-valor">${valor}</div>
       </div>`;
+  }
+
+  // ── EDICIÓN MANUAL DE PREMIOS ────────────────────────────────────────────
+  let premioEditActual = null; // { competencia, slot, tipo }
+
+  function abrirEditorPremio(competencia, slot, tipo) {
+    if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede editar premios'); return; }
+    premioEditActual = { competencia, slot, tipo };
+
+    const nombresSlot = { jugador: 'Mejor Jugador', arquero: 'Mejor Arquero', goleador: 'Goleador' };
+    document.getElementById('premio-edit-title').textContent = `${competencia} · ${nombresSlot[slot] || slot}`;
+    document.getElementById('premio-edit-label').textContent = tipo === 'nota' ? 'Nota (1-10)' : 'Goles';
+    document.getElementById('premio-edit-valor').step = tipo === 'nota' ? '0.1' : '1';
+
+    const manual  = (state.premiosManual[competencia] || {})[slot];
+    const teamSel = document.getElementById('premio-edit-team');
+    teamSel.innerHTML = '';
+    TEAMS.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      teamSel.appendChild(opt);
+    });
+    const jManual = manual
+      ? (manual.playerId != null ? jugadorPorId(manual.playerId) : resolverClave(`${manual.team}|${manual.jugador}`))
+      : null;
+    teamSel.value = jManual ? jManual.team : (manual && TEAMS.includes(manual.team) ? manual.team : TEAMS[0]);
+    actualizarJugadorEditorPremio();
+    if (manual) {
+      if (jManual) document.getElementById('premio-edit-jugador').value = String(jManual.id);
+      document.getElementById('premio-edit-valor').value   = manual.valor;
+    } else {
+      document.getElementById('premio-edit-valor').value = '';
+    }
+    document.getElementById('premio-edit-overlay').classList.remove('hidden');
+  }
+
+  function actualizarJugadorEditorPremio() {
+    const team = document.getElementById('premio-edit-team').value;
+    const sel  = document.getElementById('premio-edit-jugador');
+    sel.innerHTML = '';
+    (state.jugadores[team] || []).forEach(j => {
+      const opt = document.createElement('option');
+      opt.value = j.id; opt.textContent = j.nombre;
+      sel.appendChild(opt);
+    });
+  }
+
+  function cerrarEditorPremio() {
+    document.getElementById('premio-edit-overlay').classList.add('hidden');
+    premioEditActual = null;
+  }
+
+  async function guardarPremioManual() {
+    if (!isCommissioner || !premioEditActual) return;
+    const { competencia, slot } = premioEditActual;
+    const playerId = Number(document.getElementById('premio-edit-jugador').value);
+    const rawValor = document.getElementById('premio-edit-valor').value.trim();
+    const valor    = Number(rawValor);
+    const j        = jugadorPorId(playerId);
+
+    if (!j || rawValor === '' || Number.isNaN(valor)) { showToast('❌ Completá jugador y valor'); return; }
+
+    if (!state.premiosManual[competencia]) state.premiosManual[competencia] = {};
+    state.premiosManual[competencia][slot] = { playerId, team: j.team, jugador: j.nombre, valor };
+
+    await saveKey('premiosManual');
+    renderPremios();
+    cerrarEditorPremio();
+    showToast('✓ Premio actualizado a mano');
+  }
+
+  async function quitarPremioManual() {
+    if (!isCommissioner || !premioEditActual) return;
+    const { competencia, slot } = premioEditActual;
+    if (state.premiosManual[competencia]) delete state.premiosManual[competencia][slot];
+
+    await saveKey('premiosManual');
+    renderPremios();
+    cerrarEditorPremio();
+    showToast('✓ Vuelve a calcularse automático');
   }
 
   // ── FICHA DE PARTIDO ─────────────────────────────────────────────────────
@@ -1006,18 +1404,19 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     const competencia = torneo === 'copas' ? m.torneo
                        : torneo === 'apertura' ? 'Torneo Apertura' : 'Torneo Clausura';
     const fechaLabel = torneo === 'copas' ? '' : m.fecha;
-    const valoraciones  = m.valoraciones  || {};
-    const golesPartido  = m.golesPartido  || {};
+    const f = normalizarFicha(m);            // notas/goles/MVP ya traducidos a ids
+    const valoraciones = f.valoraciones;
+    const golesPartido = f.golesPartido;
 
     // Lista de valoraciones de un equipo, en modo "solo lectura" (vista pública)
     function listaValoraciones(team) {
-      const plantilla = state.jugadores[team] || [];
+      const plantilla = jugadoresDelLado(f, team);
       if (plantilla.length === 0) return '<div class="empty-state" style="padding:6px 0;">Sin plantel cargado</div>';
       return plantilla.map(j => {
-        const key   = `${team}|${j.nombre}`;
+        const key   = claveJ(j.id);
         const val   = valoraciones[key];
         const goles = golesPartido[key];
-        const esMvp = m.mvp === key;
+        const esMvp = f.mvp === key;
         return `
           <div class="ficha-jugador-row">
             <span class="ficha-jugador-nombre">${esMvp ? '⭐ ' : ''}${j.nombre}</span>
@@ -1028,6 +1427,8 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
           </div>`;
       }).join('');
     }
+
+    const jMvp = f.mvp ? resolverClave(f.mvp) : null;
 
     document.getElementById('ficha-view').innerHTML = `
       <div class="ficha-competencia">${competencia}</div>
@@ -1041,7 +1442,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
         ${m.estadio ? `<span>📍 ${m.estadio}</span>` : ''}
         ${m.clima   ? `<span>${m.clima}</span>`       : ''}
       </div>
-      ${m.mvp ? `<div class="ficha-mvp">⭐ Jugador del partido: <strong>${m.mvp.split('|')[1]}</strong> · ${m.mvp.split('|')[0]}</div>` : ''}
+      ${jMvp ? `<div class="ficha-mvp">⭐ Jugador del partido: <strong>${jMvp.nombre}</strong> · ${f.equipos[f.mvp] || jMvp.team}</div>` : ''}
       <div class="ficha-plantillas">
         <div class="ficha-plantilla-col"><h4>${m.home}</h4>${listaValoraciones(m.home)}</div>
         <div class="ficha-plantilla-col"><h4>${m.away}</h4>${listaValoraciones(m.away)}</div>
@@ -1055,35 +1456,34 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     const mvpSel = document.getElementById('ficha-mvp');
     mvpSel.innerHTML = '<option value="">— Sin jugador del partido —</option>';
     [m.home, m.away].forEach(team => {
-      (state.jugadores[team] || []).forEach(j => {
+      jugadoresDelLado(f, team).forEach(j => {
         const opt = document.createElement('option');
-        opt.value = `${team}|${j.nombre}`;
+        opt.value = claveJ(j.id);
+        opt.dataset.team = team;                 // equipo por el que juega en ESTE partido
         opt.textContent = `${j.nombre} (${team})`;
         mvpSel.appendChild(opt);
       });
     });
-    mvpSel.value = m.mvp || '';
+    mvpSel.value = f.mvp || '';
 
     // Por cada jugador de los 2 equipos: un input de goles y uno de nota (1-10).
-    // Cargar los goles acá los suma solo a la tabla de Goleadores — no hace
-    // falta ir a cargarlos de nuevo a mano en esa pestaña.
+    // Cargar los goles acá los suma solo a la tabla de Goleadores.
     function inputsDeEquipo(team) {
-      const plantilla = state.jugadores[team] || [];
+      const plantilla = jugadoresDelLado(f, team);
       if (plantilla.length === 0) return '';
       let h = `<div class="ficha-rating-team-title">${team}</div>`;
       plantilla.forEach(j => {
-        const key       = `${team}|${j.nombre}`;
-        const val       = valoraciones[key] ?? '';
-        const golesVal  = golesPartido[key] ?? '';
-        const nombreAtr = j.nombre.replace(/"/g, '&quot;');
+        const key      = claveJ(j.id);
+        const val      = valoraciones[key] ?? '';
+        const golesVal = golesPartido[key] ?? '';
         h += `
           <div class="ficha-rating-input-row">
             <span>${j.nombre}</span>
             <span class="ficha-input-pair">
               <input type="number" min="0" step="1" class="gol-input input-inline small"
-                     data-team="${team}" data-nombre="${nombreAtr}" value="${golesVal}" title="Goles" placeholder="⚽">
+                     data-id="${j.id}" data-team="${team}" value="${golesVal}" title="Goles" placeholder="⚽">
               <input type="number" min="1" max="10" step="0.1" class="rating-input input-inline small"
-                     data-team="${team}" data-nombre="${nombreAtr}" value="${val}" title="Nota (1-10)" placeholder="Nota">
+                     data-id="${j.id}" data-team="${team}" value="${val}" title="Nota (1-10)" placeholder="Nota">
             </span>
           </div>`;
       });
@@ -1100,26 +1500,42 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
 
     const estadio = document.getElementById('ficha-estadio').value.trim();
     const clima   = document.getElementById('ficha-clima').value.trim();
-    const mvp     = document.getElementById('ficha-mvp').value;
+    const mvpSel  = document.getElementById('ficha-mvp');
+    const mvp     = mvpSel.value;
 
-    const valoraciones = {};
+    // Arrancamos de lo ya guardado y le aplicamos lo que hay en el formulario.
+    // Así no se pierden datos de jugadores que ya no aparecen en las listas
+    // (por ejemplo, alguien que fue transferido o dado de baja).
+    const f0 = normalizarFicha(state[torneo][idx]);
+    const valoraciones = { ...f0.valoraciones };
+    const golesPartido = { ...f0.golesPartido };
+    const equipos      = { ...f0.equipos };
+
     document.querySelectorAll('#ficha-ratings .rating-input').forEach(inp => {
+      const key = claveJ(inp.dataset.id);
       const v = inp.value.trim();
-      if (v === '') return;
-      valoraciones[`${inp.dataset.team}|${inp.dataset.nombre}`] = Number(v);
+      if (v === '') { delete valoraciones[key]; return; }
+      valoraciones[key] = Number(v);
+      equipos[key] = inp.dataset.team;
     });
 
-    const golesPartido = {};
     document.querySelectorAll('#ficha-ratings .gol-input').forEach(inp => {
+      const key = claveJ(inp.dataset.id);
       const v = Number(inp.value.trim() || 0);
-      if (v <= 0) return; // 0 goles = no hace falta guardarlo
-      golesPartido[`${inp.dataset.team}|${inp.dataset.nombre}`] = v;
+      if (v <= 0) { delete golesPartido[key]; return; } // 0 goles = no hace falta guardarlo
+      golesPartido[key] = v;
+      equipos[key] = inp.dataset.team;
     });
 
-    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones, golesPartido };
+    if (mvp && mvpSel.selectedOptions[0]?.dataset.team && !equipos[mvp]) {
+      equipos[mvp] = mvpSel.selectedOptions[0].dataset.team;
+    }
+
+    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones, golesPartido, equipos };
     await saveKey(torneo);       // guarda el partido (con sus goles adentro)
     renderFicha();
     renderPichichi();            // la tabla de Goleadores se actualiza sola, al toque
+    renderPremios();
     showToast('✓ Ficha guardada — Goleadores actualizado');
   }
 
@@ -1127,21 +1543,30 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // con los que ahora se cargan desde la ficha de cada partido, y devuelve
   // el total combinado por jugador. Así no se pierde nada de lo ya cargado.
   function calcularGoleadores() {
-    const mapa = {}; // "Equipo|Nombre" -> { team, jugador, goles, manualId }
+    const mapa = {}; // "p<id>" (o "x|Equipo|Nombre" si no se pudo identificar) -> total
 
+    // Goles cargados a mano en la pestaña Goleadores
     state.goles.forEach(g => {
-      mapa[`${g.team}|${g.jugador}`] = { team: g.team, jugador: g.jugador, goles: g.goles, manualId: g.id };
+      const j = g.playerId != null ? jugadorPorId(g.playerId) : resolverClave(`${g.team}|${g.jugador}`);
+      const k = j ? claveJ(j.id) : `x|${g.team}|${g.jugador}`;
+      if (!mapa[k]) {
+        mapa[k] = j
+          ? { team: j.team, jugador: j.nombre, goles: 0, manualId: g.id }
+          : { team: g.team, jugador: g.jugador, goles: 0, manualId: g.id };
+      }
+      mapa[k].goles += g.goles;
     });
 
+    // Goles cargados desde la ficha de cada partido
     ['apertura', 'clausura', 'copas'].forEach(torneo => {
       (state[torneo] || []).forEach(m => {
-        Object.entries(m.golesPartido || {}).forEach(([key, cantidad]) => {
+        Object.entries(normalizarFicha(m).golesPartido).forEach(([key, cantidad]) => {
           if (!cantidad) return;
-          if (!mapa[key]) {
-            const [team, jugador] = key.split('|');
-            mapa[key] = { team, jugador, goles: 0, manualId: null };
-          }
-          mapa[key].goles += cantidad;
+          const j = resolverClave(key);
+          if (!j) return;
+          const k = claveJ(j.id);
+          if (!mapa[k]) mapa[k] = { team: j.team, jugador: j.nombre, goles: 0, manualId: null };
+          mapa[k].goles += cantidad;
         });
       });
     });
@@ -1164,6 +1589,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   window.removeGol      = removeGol;
   window.removeTarjeta  = removeTarjeta;
   window.abrirFicha     = abrirFicha;
+  window.abrirEditorPremio = abrirEditorPremio;
   window.tryUnlock      = tryUnlock;
   window.enterSpectator = enterSpectator;
   window.promptLogin    = promptLogin;
@@ -1192,6 +1618,10 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   document.getElementById('btn-add-jugador').addEventListener('click',  agregarJugador);
   document.getElementById('btn-ficha-close').addEventListener('click',   cerrarFicha);
   document.getElementById('btn-ficha-guardar').addEventListener('click', guardarFicha);
+  document.getElementById('premio-edit-close').addEventListener('click',   cerrarEditorPremio);
+  document.getElementById('premio-edit-guardar').addEventListener('click', guardarPremioManual);
+  document.getElementById('premio-edit-quitar').addEventListener('click',  quitarPremioManual);
+  document.getElementById('premio-edit-team').addEventListener('change',   actualizarJugadorEditorPremio);
   document.getElementById('btn-unlock').addEventListener('click',       tryUnlock);
   document.getElementById('btn-spectator').addEventListener('click',    enterSpectator);
   document.getElementById('lock-pwd').addEventListener('keydown',  e => { if (e.key === 'Enter') tryUnlock(); });

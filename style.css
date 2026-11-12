@@ -1077,3 +1077,77 @@
   .premio-jija-ganador { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
   .premio-jija-ganador small { color: #888; font-weight: 400; }
   .premio-jija-valor { font-family: 'Bebas Neue', sans-serif; color: var(--verde); font-size: 16px; }
+
+  /* ── EDITOR MANUAL DE PREMIOS ── */
+  #premio-edit-overlay {
+    position: fixed; inset: 0; z-index: 700;
+    background: rgba(10,10,10,.94);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  #premio-edit-overlay.hidden { display: none; }
+  .premio-edit-box {
+    position: relative;
+    background: var(--gris-medio);
+    border: 1px solid var(--gris-borde);
+    border-top: 3px solid var(--oro);
+    border-radius: 8px;
+    padding: 28px 24px 22px;
+    width: min(380px, 100%);
+  }
+  .premio-edit-label { font-size: 13px; color: #999; }
+  .premio-edit-box .lock-btn { width: 100%; margin-top: 6px; }
+  .premio-edit-box .lock-skip { width: 100%; margin-top: 10px; }
+
+  .btn-editar-premio {
+    background: none; border: 1px solid var(--gris-borde);
+    border-radius: 4px; cursor: pointer;
+    font-size: 12px; padding: 1px 6px; line-height: 1.4;
+    opacity: .7; transition: opacity .15s, border-color .15s;
+  }
+  .btn-editar-premio:hover { opacity: 1; border-color: var(--oro); }
+  .premio-jija-card { position: relative; }
+  .premio-jija-card .btn-editar-premio { position: absolute; top: 8px; right: 8px; }
+  .tag-manual {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--oro); border: 1px solid rgba(255,215,0,.4);
+    border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: middle;
+  }
+  body.spectator-mode .btn-editar-premio { display: none !important; }
+
+  /* ── ARRASTRAR JUGADORES ── */
+  .plantilla-card { min-height: 110px; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .plantilla-card.drop-target {
+    border-color: var(--verde);
+    box-shadow: 0 0 0 2px rgba(0,255,135,.35);
+    background: rgba(0,255,135,.06);
+  }
+  .plantilla-grip {
+    cursor: grab;
+    touch-action: none;          /* clave: evita que el dedo scrollee la página al arrastrar */
+    user-select: none;
+    color: #666;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 2px;
+    flex-shrink: 0;
+  }
+  .plantilla-grip:hover { color: var(--verde); }
+  .plantilla-jugador.arrastrando { opacity: .3; }
+  .plantilla-ghost {
+    position: fixed; z-index: 900;
+    pointer-events: none;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(30,20,50,.97);
+    border: 1px solid var(--verde);
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  }
+  .plantilla-ghost .btn-del-jugador { display: none; }
+  body.dragging-jugador { user-select: none; cursor: grabbing; }
+
+  .hint-comisionado { font-size: 12px; color: #777; margin: -6px 0 16px; }
+  body.spectator-mode .hint-comisionado,
+  body.spectator-mode .plantilla-grip { display: none !important; }
