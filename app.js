@@ -1,5 +1,5 @@
 import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, get }
+  import { getDatabase, ref, set, update, onValue, get }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -127,14 +127,37 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     return out;
   }
 
-  function jugadorPorId(id) {
-    return todosLosJugadores().find(j => j.id === Number(id)) || null;
+  // Busca un jugador por id. Si por datos viejos hay IDs repetidos entre
+  // equipos, desempata con pistas: el equipo y/o el nombre con que se
+  // guardó el dato. (Una vez reparados los IDs, las pistas ya no hacen falta.)
+  function jugadorPorId(id, pistaEquipo, pistaNombre) {
+    const c = todosLosJugadores().filter(j => j.id === Number(id));
+    if (c.length <= 1) return c[0] || null;
+    return c.find(j => j.team === pistaEquipo && pistaNombre && norm(j.nombre) === norm(pistaNombre))
+        || c.find(j => pistaNombre && norm(j.nombre) === norm(pistaNombre))
+        || c.find(j => j.team === pistaEquipo)
+        || null;
+  }
+
+  function hayIdsDuplicados() {
+    const vistos = new Set();
+    return todosLosJugadores().some(j => {
+      if (vistos.has(j.id)) return true;
+      vistos.add(j.id);
+      return false;
+    });
+  }
+
+  // Un id nuevo que no choca con ninguno existente.
+  function siguienteIdLibre() {
+    const max = todosLosJugadores().reduce((m, j) => Math.max(m, Number(j.id) || 0), 0);
+    return Math.max(Date.now(), max + 1);
   }
 
   // Acepta la clave nueva ("p123") o la vieja ("Equipo|Nombre").
   // Devuelve el jugador (con su equipo ACTUAL) o null si no existe más.
-  function resolverClave(key) {
-    if (esClaveId(key)) return jugadorPorId(String(key).slice(1));
+  function resolverClave(key, pistaEquipo, pistaNombre) {
+    if (esClaveId(key)) return jugadorPorId(String(key).slice(1), pistaEquipo, pistaNombre);
     const [team, nombre] = String(key).split('|');
     const enEquipo = (state.jugadores[team] || []).find(j => norm(j.nombre) === norm(nombre));
     if (enEquipo) return { ...enEquipo, team };
@@ -145,8 +168,13 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // Para registros sueltos (goles manuales, tarjetas) que guardan playerId
   // y, de respaldo, el nombre/equipo con que se cargaron.
   function datosJugadorRegistro(r) {
-    const j = r.playerId != null ? jugadorPorId(r.playerId) : resolverClave(`${r.team}|${r.jugador}`);
+    const j = r.playerId != null ? jugadorPorId(r.playerId, r.team, r.jugador) : resolverClave(`${r.team}|${r.jugador}`);
     return j ? { nombre: j.nombre, team: j.team } : { nombre: r.jugador, team: r.team };
+  }
+
+  function esMismoJugador(reg, j) {
+    const r = reg.playerId != null ? jugadorPorId(reg.playerId, reg.team, reg.jugador) : resolverClave(`${reg.team}|${reg.jugador}`);
+    return !!r && r.id === j.id && r.team === j.team;
   }
 
   // Devuelve las notas/goles/MVP de un partido ya traducidos a ids, junto
@@ -196,7 +224,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     Object.entries(f.equipos).forEach(([k, t]) => {
       vistos.add(k);
       if (t !== team) return;
-      const j = jugadorPorId(k.slice(1));
+      const j = jugadorPorId(k.slice(1), t);
       if (j) out.push({ ...j, team });
     });
     (state.jugadores[team] || []).forEach(j => {
@@ -217,8 +245,16 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     if (!isCommissioner || !primerSnapshot || ocupadoMigrando) return;
     ocupadoMigrando = true;
     try {
-      await migrarJugadoresSiHaceFalta();
-      await migrarClavesAIds();
+      // Cada paso devuelve true si escribió algo en Firebase. Si escribió,
+      // esperamos a que llegue el snapshot actualizado y repetimos (máx. 3
+      // vueltas) para que el paso siguiente trabaje con datos al día.
+      for (let vuelta = 0; vuelta < 3; vuelta++) {
+        const a = await migrarJugadoresSiHaceFalta();
+        const b = await repararIdsDuplicados();
+        const c = await migrarClavesAIds();
+        if (!a && !b && !c) break;
+        await new Promise(r => setTimeout(r, 700));
+      }
     } catch (e) {
       console.error('Error en tareas de comisionado', e);
     } finally {
@@ -226,11 +262,116 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     }
   }
 
+  // ── REPARACIÓN DE IDs REPETIDOS ──────────────────────────────────────────
+  // Las plantillas iniciales se numeraron con un contador que arrancaba de
+  // nuevo en cada equipo, así que jugadores de equipos distintos quedaron con
+  // el MISMO id. Esto les da ids únicos y re-etiqueta notas, goles, MVP,
+  // tarjetas y premios usando el equipo guardado como desempate.
+  //
+  // calcularReparacionIds() es "pura": solo calcula, no escribe nada.
+  function calcularReparacionIds() {
+    const todos = todosLosJugadores();
+    const cuenta = {};
+    todos.forEach(j => { cuenta[j.id] = (cuenta[j.id] || 0) + 1; });
+    const repetidos = new Set(Object.keys(cuenta).filter(k => cuenta[k] > 1).map(Number));
+    if (repetidos.size === 0) return null;
+
+    let maxId = todos.reduce((m, j) => Math.max(m, Number(j.id) || 0), 0);
+    const usados = new Set();
+    const mapa = {};                       // "Equipo|idViejo" -> idNuevo
+    const jugadores = {};
+    Object.keys(state.jugadores).forEach(team => {
+      jugadores[team] = (state.jugadores[team] || []).map(j => {
+        let id = j.id;
+        if (usados.has(id)) id = ++maxId;  // el primero conserva su id, los demás reciben uno nuevo
+        usados.add(id);
+        mapa[`${team}|${j.id}`] = id;
+        return { ...j, id };
+      });
+    });
+
+    const nuevaClave = (key, team) => {
+      if (!esClaveId(key) || !team) return key;
+      const nuevo = mapa[`${team}|${String(key).slice(1)}`];
+      return nuevo != null ? claveJ(nuevo) : key;
+    };
+
+    const paraGuardar = { jugadores };
+
+    ['apertura', 'clausura', 'copas'].forEach(torneo => {
+      paraGuardar[torneo] = state[torneo].map(m => {
+        const f = normalizarFicha(m);
+        const tieneDatos = Object.keys(f.valoraciones).length || Object.keys(f.golesPartido).length || f.mvp;
+        if (!tieneDatos) return m;
+
+        const equipos = {};
+        Object.entries(f.equipos).forEach(([k, t]) => { equipos[nuevaClave(k, t)] = t; });
+        const reclave = obj => {
+          const o = {};
+          Object.entries(obj).forEach(([k, v]) => { o[nuevaClave(k, f.equipos[k])] = v; });
+          return o;
+        };
+
+        // ¿Se pudieron mezclar datos en este partido? Pasa si los DOS equipos
+        // tenían un jugador con el mismo id viejo y ese id tiene datos cargados.
+        const claves = [...Object.keys(f.valoraciones), ...Object.keys(f.golesPartido), f.mvp];
+        const sospechoso = claves.some(k => {
+          if (!k || !esClaveId(k)) return false;
+          const id = Number(k.slice(1));
+          return repetidos.has(id) && [m.home, m.away].every(t => (state.jugadores[t] || []).some(j => j.id === id));
+        });
+
+        return {
+          ...m,
+          valoraciones: reclave(f.valoraciones),
+          golesPartido: reclave(f.golesPartido),
+          mvp: f.mvp ? nuevaClave(f.mvp, f.equipos[f.mvp]) : '',
+          equipos,
+          ...(sospechoso ? { revisar: true } : {})
+        };
+      });
+    });
+
+    ['goles', 'tarjetas'].forEach(key => {
+      paraGuardar[key] = state[key].map(r => {
+        if (r.playerId == null) return r;
+        const nuevo = mapa[`${r.team}|${r.playerId}`];
+        return nuevo != null ? { ...r, playerId: nuevo } : r;
+      });
+    });
+
+    const premios = JSON.parse(JSON.stringify(state.premiosManual || {}));
+    Object.values(premios).forEach(comp => {
+      Object.keys(comp || {}).forEach(slot => {
+        const x = comp[slot];
+        if (!x || x.playerId == null) return;
+        const nuevo = mapa[`${x.team}|${x.playerId}`];
+        if (nuevo != null) x.playerId = nuevo;
+      });
+    });
+    paraGuardar.premiosManual = premios;
+
+    return { paraGuardar };
+  }
+
+  async function repararIdsDuplicados() {
+    const r = calcularReparacionIds();
+    if (!r) return false;
+    setStatus('syncing');
+    // update() escribe todas las ramas juntas, de una vez: nunca queda a
+    // medias (plantillas con ids nuevos pero partidos con los viejos).
+    await update(ref(database, 'jija2026'), r.paraGuardar);
+    setStatus('online');
+    showToast('🔧 IDs de jugadores reparados. Revisá los partidos marcados con ⚠️');
+    return true;
+  }
+
   // Convierte UNA vez los datos viejos (claves "Equipo|Nombre") a ids.
   // Calcula todo primero y recién después escribe, para que los snapshots de
   // Firebase que van llegando en el medio no pisen lo que falta convertir.
   async function migrarClavesAIds() {
-    if (Object.keys(state.jugadores || {}).length === 0) return;
+    if (Object.keys(state.jugadores || {}).length === 0) return false;
+    if (hayIdsDuplicados()) return false;      // primero hay que reparar los IDs
     const paraGuardar = {};
 
     ['apertura', 'clausura', 'copas'].forEach(torneo => {
@@ -270,14 +411,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     });
     if (huboPremios) paraGuardar.premiosManual = premios;
 
-    const claves = Object.keys(paraGuardar);
-    if (claves.length === 0) return;
+    if (Object.keys(paraGuardar).length === 0) return false;
     setStatus('syncing');
-    for (const key of claves) {
-      await set(ref(database, `jija2026/${key}`), paraGuardar[key]);
-    }
+    await update(ref(database, 'jija2026'), paraGuardar);
     setStatus('online');
     showToast('✓ Datos actualizados: los jugadores ahora se identifican por ID');
+    return true;
   }
 
   // ── LISTENER EN TIEMPO REAL ──────────────────────────────────────────────
@@ -591,7 +730,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     state[torneo].forEach(m => {
       html += `
         <div class="match-item" onclick="window.abrirFicha('${torneo}', ${m.id})">
-          <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong></div>
+          <div class="teams"><strong>${m.home}</strong> vs <strong>${m.away}</strong>${m.revisar ? ' <span class="aviso-revisar" title="Revisar notas y goles de este partido">⚠️</span>' : ''}</div>
           <div class="score-display">${m.ghome} — ${m.gaway}</div>
           <div class="round-label">${m.fecha}</div>
           <button class="btn-danger" onclick="event.stopPropagation(); window.removeMatch('${torneo}', ${m.id})">Borrar</button>
@@ -636,7 +775,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
         <div class="match-item" style="border-left: 3px solid var(--azul);" onclick="window.abrirFicha('copas', ${c.id})">
           <div class="teams">
             <span style="font-size:11px;display:block;color:var(--azul);width:100%;font-weight:700;">${c.torneo}</span>
-            <strong>${c.home}</strong> vs <strong>${c.away}</strong>
+            <strong>${c.home}</strong> vs <strong>${c.away}</strong>${c.revisar ? ' <span class="aviso-revisar" title="Revisar notas y goles de este partido">⚠️</span>' : ''}
             ${c.nota ? `<span style="color:#666;font-size:12px;">(${c.nota})</span>` : ''}
           </div>
           <div class="score-display" style="color:var(--azul);">${c.ghome} — ${c.gaway}</div>
@@ -649,29 +788,28 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── GOLEADORES ─────────────────────────────────────────────────────────────
   async function addGol() {
     if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar goles'); return; }
-    const playerId = Number(document.getElementById('gol-jugador').value);
-    const cantidad = parseInt(document.getElementById('gol-cantidad').value) || 1;
-    const j = jugadorPorId(playerId);
+    const equipoElegido = document.getElementById('gol-team').value;
+    const playerId      = Number(document.getElementById('gol-jugador').value);
+    const cantidad      = parseInt(document.getElementById('gol-cantidad').value) || 1;
+    const j = jugadorPorId(playerId, equipoElegido);
 
     if (!j) { showToast('❌ Elegí un jugador de la lista'); return; }
 
     // ¿Ya hay un registro manual de este jugador? (nuevo, por id, o viejo, por nombre)
-    const existente =
-      state.goles.find(g => g.playerId === playerId) ||
-      state.goles.find(g => g.playerId == null && resolverClave(`${g.team}|${g.jugador}`)?.id === playerId);
+    const existente = state.goles.find(g => esMismoJugador(g, j));
 
     if (existente) {
       existente.goles   += cantidad;
-      existente.playerId = playerId;
+      existente.playerId = j.id;
       existente.team     = j.team;
       existente.jugador  = j.nombre;
     } else {
-      state.goles.push({ id: Date.now(), playerId, team: j.team, jugador: j.nombre, goles: cantidad });
+      state.goles.push({ id: Date.now(), playerId: j.id, team: j.team, jugador: j.nombre, goles: cantidad });
     }
 
     await saveKey('goles');
     document.getElementById('gol-cantidad').value = 1;
-    showToast('✓ Gol anotado');
+    showToast(`✓ ${cantidad} ${cantidad === 1 ? 'gol' : 'goles'} para ${j.nombre} (${j.team})`);
   }
 
   async function removeGol(id) {
@@ -720,13 +858,14 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // ── DISCIPLINA ─────────────────────────────────────────────────────────────
   async function addTarjeta() {
     if (!isCommissioner) { showToast('🔒 Solo el Comisionado puede registrar tarjetas'); return; }
-    const playerId = Number(document.getElementById('disc-jugador').value);
-    const tipo     = document.getElementById('disc-tipo').value;
-    const j = jugadorPorId(playerId);
+    const equipoElegido = document.getElementById('disc-team').value;
+    const playerId      = Number(document.getElementById('disc-jugador').value);
+    const tipo          = document.getElementById('disc-tipo').value;
+    const j = jugadorPorId(playerId, equipoElegido);
 
     if (!j) { showToast('❌ Elegí un jugador de la lista'); return; }
 
-    state.tarjetas.push({ id: Date.now(), playerId, team: j.team, jugador: j.nombre, tipo });
+    state.tarjetas.push({ id: Date.now(), playerId: j.id, team: j.team, jugador: j.nombre, tipo });
     await saveKey('tarjetas');
     showToast('✓ Tarjeta Registrada');
   }
@@ -819,18 +958,17 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // vuelve a usar.
   async function migrarJugadoresSiHaceFalta() {
     const yaHayDatos = Object.keys(state.jugadores || {}).length > 0;
-    if (yaHayDatos) return;
+    if (yaHayDatos) return false;
 
+    let siguiente = Date.now();            // un solo contador para TODOS los equipos
     const conIds = {};
     Object.keys(DEFAULT_PLAYERS_SEED).forEach(team => {
-      conIds[team] = DEFAULT_PLAYERS_SEED[team].map((j, i) => ({
-        id: Date.now() + i,
-        ...j
-      }));
+      conIds[team] = DEFAULT_PLAYERS_SEED[team].map(j => ({ id: siguiente++, ...j }));
     });
     state.jugadores = conIds;
     await saveKey('jugadores');
     showToast('✓ Plantillas migradas a Firebase');
+    return true;
   }
 
   function renderPlantillas() {
@@ -989,7 +1127,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     }
 
     if (!state.jugadores[team]) state.jugadores[team] = [];
-    state.jugadores[team].push({ id: Date.now(), nombre, numero, posicion });
+    state.jugadores[team].push({ id: siguienteIdLibre(), nombre, numero, posicion });
 
     await saveKey('jugadores');
     document.getElementById('nuevo-jugador-nombre').value = '';
@@ -1134,10 +1272,10 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       const f = normalizarFicha(m);
       Object.entries(f.valoraciones).forEach(([key, nota]) => {
         if (nota == null) return;
-        const j = resolverClave(key);
+        const j = resolverClave(key, f.equipos[key]);
         if (!j) return;                                   // jugador borrado: no cuenta
         if (filtroPosicion && j.posicion !== filtroPosicion) return;
-        const k = claveJ(j.id);
+        const k = claveJ(j.id) + '@' + j.team;            // (el equipo evita mezclar ids repetidos viejos)
         if (!acumulado[k]) acumulado[k] = { id: j.id, team: j.team, jugador: j.nombre, suma: 0, partidos: 0 };
         acumulado[k].suma += nota;
         acumulado[k].partidos += 1;
@@ -1163,9 +1301,9 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       const f = normalizarFicha(m);
       Object.entries(f.golesPartido).forEach(([key, cantidad]) => {
         if (!cantidad) return;
-        const j = resolverClave(key);
+        const j = resolverClave(key, f.equipos[key]);
         if (!j) return;
-        const k = claveJ(j.id);
+        const k = claveJ(j.id) + '@' + j.team;
         if (!acumulado[k]) acumulado[k] = { id: j.id, team: j.team, jugador: j.nombre, goles: 0 };
         acumulado[k].goles += cantidad;
       });
@@ -1250,7 +1388,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   function ganadorFinal(competencia, slot, ganadorAutomatico) {
     const manual = (state.premiosManual[competencia] || {})[slot];
     if (manual) {
-      const j = manual.playerId != null ? jugadorPorId(manual.playerId) : resolverClave(`${manual.team}|${manual.jugador}`);
+      const j = manual.playerId != null ? jugadorPorId(manual.playerId, manual.team, manual.jugador) : resolverClave(`${manual.team}|${manual.jugador}`);
       return { ...manual, ...(j ? { jugador: j.nombre, team: j.team } : {}), esManual: true };
     }
     return ganadorAutomatico;
@@ -1320,7 +1458,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       teamSel.appendChild(opt);
     });
     const jManual = manual
-      ? (manual.playerId != null ? jugadorPorId(manual.playerId) : resolverClave(`${manual.team}|${manual.jugador}`))
+      ? (manual.playerId != null ? jugadorPorId(manual.playerId, manual.team, manual.jugador) : resolverClave(`${manual.team}|${manual.jugador}`))
       : null;
     teamSel.value = jManual ? jManual.team : (manual && TEAMS.includes(manual.team) ? manual.team : TEAMS[0]);
     actualizarJugadorEditorPremio();
@@ -1355,7 +1493,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     const playerId = Number(document.getElementById('premio-edit-jugador').value);
     const rawValor = document.getElementById('premio-edit-valor').value.trim();
     const valor    = Number(rawValor);
-    const j        = jugadorPorId(playerId);
+    const j        = jugadorPorId(playerId, document.getElementById('premio-edit-team').value);
 
     if (!j || rawValor === '' || Number.isNaN(valor)) { showToast('❌ Completá jugador y valor'); return; }
 
@@ -1428,10 +1566,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       }).join('');
     }
 
-    const jMvp = f.mvp ? resolverClave(f.mvp) : null;
+    const jMvp = f.mvp ? resolverClave(f.mvp, f.equipos[f.mvp]) : null;
 
     document.getElementById('ficha-view').innerHTML = `
       <div class="ficha-competencia">${competencia}</div>
+      ${m.revisar ? '<div class="ficha-aviso">⚠️ Revisá las notas y goles de este partido: pudieron mezclarse por un error de IDs ya corregido. Al guardar la ficha, el aviso desaparece.</div>' : ''}
       <div class="ficha-scoreboard">
         <div class="ficha-team">${m.home}</div>
         <div class="ficha-score">${m.ghome} - ${m.gaway}</div>
@@ -1464,7 +1603,8 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
         mvpSel.appendChild(opt);
       });
     });
-    mvpSel.value = f.mvp || '';
+    const opcionMvp = [...mvpSel.options].find(o => o.value === f.mvp && (!f.equipos[f.mvp] || o.dataset.team === f.equipos[f.mvp]));
+    if (opcionMvp) opcionMvp.selected = true; else mvpSel.value = '';
 
     // Por cada jugador de los 2 equipos: un input de goles y uno de nota (1-10).
     // Cargar los goles acá los suma solo a la tabla de Goleadores.
@@ -1497,6 +1637,11 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     const { torneo, id } = fichaActual;
     const idx = state[torneo].findIndex(x => x.id === id);
     if (idx === -1) return;
+
+    if (hayIdsDuplicados()) {
+      showToast('⏳ Se están reparando los datos de jugadores. Probá de nuevo en unos segundos.');
+      return;
+    }
 
     const estadio = document.getElementById('ficha-estadio').value.trim();
     const clima   = document.getElementById('ficha-clima').value.trim();
@@ -1531,7 +1676,7 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
       equipos[mvp] = mvpSel.selectedOptions[0].dataset.team;
     }
 
-    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones, golesPartido, equipos };
+    state[torneo][idx] = { ...state[torneo][idx], estadio, clima, mvp, valoraciones, golesPartido, equipos, revisar: false };
     await saveKey(torneo);       // guarda el partido (con sus goles adentro)
     renderFicha();
     renderPichichi();            // la tabla de Goleadores se actualiza sola, al toque
@@ -1543,12 +1688,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
   // con los que ahora se cargan desde la ficha de cada partido, y devuelve
   // el total combinado por jugador. Así no se pierde nada de lo ya cargado.
   function calcularGoleadores() {
-    const mapa = {}; // "p<id>" (o "x|Equipo|Nombre" si no se pudo identificar) -> total
+    const mapa = {}; // "p<id>@Equipo" (o "x|Equipo|Nombre" si no se pudo identificar) -> total
 
     // Goles cargados a mano en la pestaña Goleadores
     state.goles.forEach(g => {
-      const j = g.playerId != null ? jugadorPorId(g.playerId) : resolverClave(`${g.team}|${g.jugador}`);
-      const k = j ? claveJ(j.id) : `x|${g.team}|${g.jugador}`;
+      const j = g.playerId != null ? jugadorPorId(g.playerId, g.team, g.jugador) : resolverClave(`${g.team}|${g.jugador}`);
+      const k = j ? `${claveJ(j.id)}@${j.team}` : `x|${g.team}|${g.jugador}`;
       if (!mapa[k]) {
         mapa[k] = j
           ? { team: j.team, jugador: j.nombre, goles: 0, manualId: g.id }
@@ -1560,11 +1705,12 @@ import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12
     // Goles cargados desde la ficha de cada partido
     ['apertura', 'clausura', 'copas'].forEach(torneo => {
       (state[torneo] || []).forEach(m => {
-        Object.entries(normalizarFicha(m).golesPartido).forEach(([key, cantidad]) => {
+        const f = normalizarFicha(m);
+        Object.entries(f.golesPartido).forEach(([key, cantidad]) => {
           if (!cantidad) return;
-          const j = resolverClave(key);
+          const j = resolverClave(key, f.equipos[key]);
           if (!j) return;
-          const k = claveJ(j.id);
+          const k = `${claveJ(j.id)}@${j.team}`;
           if (!mapa[k]) mapa[k] = { team: j.team, jugador: j.nombre, goles: 0, manualId: null };
           mapa[k].goles += cantidad;
         });

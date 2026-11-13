@@ -1151,3 +1151,16 @@
   .hint-comisionado { font-size: 12px; color: #777; margin: -6px 0 16px; }
   body.spectator-mode .hint-comisionado,
   body.spectator-mode .plantilla-grip { display: none !important; }
+
+  /* ── AVISO "REVISAR" (partidos cuyos datos pudieron mezclarse) ── */
+  .aviso-revisar { cursor: help; }
+  .ficha-aviso {
+    background: rgba(255, 193, 7, .1);
+    border: 1px solid rgba(255, 193, 7, .45);
+    color: #ffc107;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+  }
